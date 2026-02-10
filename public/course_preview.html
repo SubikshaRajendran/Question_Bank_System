@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Preview - Question Bank System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <nav>
+        <div class="logo">QB Student</div>
+        <ul>
+            <li><a href="student_dashboard.html">Dashboard</a></li>
+        </ul>
+    </nav>
+
+    <div class="container" style="max-width: 800px; margin-top: 4rem;">
+        <div class="card" style="text-align: center; padding: 3rem;">
+            <h2 id="courseTitle" style="font-size: 2rem; margin-bottom: 1.5rem;">Loading...</h2>
+            <p id="courseDesc" style="font-size: 1.2rem; color: #4b5563; margin-bottom: 2.5rem;"></p>
+
+            <div id="actionArea">
+                <button class="btn" style="font-size: 1.2rem; padding: 1rem 2rem;" onclick="handleRegister()">Register
+                    for Course</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        if (localStorage.getItem('role') !== 'student') {
+            window.location.href = 'login_selection.html';
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const courseId = urlParams.get('id');
+        const user = JSON.parse(localStorage.getItem('user'));
+
+        if (!courseId || !user) {
+            window.location.href = 'student_dashboard.html';
+        }
+
+        async function loadCourse() {
+            const data = await getCourse(courseId);
+            if (!data.course) {
+                alert('Course not found');
+                window.location.href = 'student_dashboard.html';
+                return;
+            }
+
+            document.getElementById('courseTitle').textContent = data.course.title;
+            document.getElementById('courseDesc').textContent = data.course.description || 'No description available.';
+
+            // Check if already registered
+            // We need to fetch fresh user data to be sure, or rely on local if updated
+            // Let's fetch registered courses to be accurate
+            const registeredObs = await fetchRegisteredCourses(user._id);
+            // registeredObs is array of objects from populate or IDs? 
+            // In routes/users.js: populate('registeredCourses') returns objects. 
+            // We need to check IDs.
+            const isRegistered = registeredObs.some(c => c._id === courseId);
+
+            if (isRegistered) {
+                const actionArea = document.getElementById('actionArea');
+                actionArea.innerHTML = `
+                    <button class="btn btn-secondary" disabled style="font-size: 1.2rem; padding: 1rem 2rem; border-color: var(--success); color: var(--success); font-weight: bold;">
+                        ✅ Registered
+                    </button>
+                    <p style="margin-top: 1rem; color: gray;">Go to "Registered Courses" to view content.</p>
+                `;
+            }
+        }
+
+        async function handleRegister() {
+            if (!confirm('Register for this course?')) return;
+
+            try {
+                await registerCourse(user._id, courseId);
+                alert('Successfully registered!');
+                window.location.href = 'registered_courses.html';
+            } catch (err) {
+                alert('Registration failed');
+                console.error(err);
+            }
+        }
+
+        loadCourse();
+    </script>
+</body>
+
+</html>

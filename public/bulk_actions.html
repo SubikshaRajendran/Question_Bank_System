@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Actions - Question Bank System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .bulk-controls {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: var(--card-bg);
+            border-radius: 0.5rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-bg);
+        }
+
+        th,
+        td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+
+        th {
+            background: rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <div class="logo">QB Admin</div>
+        <ul>
+            <li><a href="admin_dashboard.html">Dashboard</a></li>
+            <li><a href="index.html">Logout</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h2>Manage Questions (Bulk)</h2>
+
+        <div class="bulk-controls">
+            <button id="btnDelete" class="btn btn-danger" onclick="bulkDelete()" disabled>Delete Selected</button>
+
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <label>Move to:</label>
+                <select id="targetCourse">
+                    <option value="">Select Course</option>
+                </select>
+                <button id="btnMove" class="btn" onclick="bulkMove()" disabled>Move Selected</button>
+            </div>
+
+            <div style="margin-left: auto; display: flex; gap: 1rem; align-items: center;">
+                <input type="text" id="questionSearch" onkeyup="filterQuestions()" placeholder="Search questions..."
+                    style="padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;">
+
+                <div>
+                    <label>Filter by Course:</label>
+                    <select id="courseFilter" onchange="loadQuestions()">
+                        <option value="">All Courses</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <table id="qTable">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+                    <th>Question</th>
+                    <th>Current Course</th>
+                </tr>
+            </thead>
+            <tbody id="qBody">
+                <tr>
+                    <td colspan="3">Loading...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="js/app.js"></script>
+    <script src="js/theme.js"></script>
+    <script>
+        if (localStorage.getItem('role') !== 'admin') window.location.href = 'login_selection.html';
+
+        let allQuestions = [];
+        let allCourses = [];
+
+        async function init() {
+            allCourses = await fetchCourses();
+            const courseSelects = [document.getElementById('courseFilter'), document.getElementById('targetCourse')];
+
+            courseSelects.forEach(sel => {
+                allCourses.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c._id;
+                    opt.textContent = c.title;
+                    sel.appendChild(opt);
+                });
+            });
+
+            loadQuestions();
+        }
+
+        async function loadQuestions() {
+            const filterId = document.getElementById('courseFilter').value;
+            let questionsToShow = [];
+
+            if (filterId) {
+                const data = await getCourse(filterId);
+                if (data.questions) {
+                    questionsToShow = data.questions.map(q => ({ ...q, courseName: data.course.title }));
+                }
+            } else {
+                for (const c of allCourses) {
+                    const data = await getCourse(c._id);
+                    if (data.questions) {
+                        questionsToShow.push(...data.questions.map(q => ({ ...q, courseName: c.title })));
+                    }
+                }
+            }
+
+            allQuestions = questionsToShow;
+            filterQuestions(); // Initial render
+        }
+
+        function filterQuestions() {
+            const searchTerm = document.getElementById('questionSearch').value.toLowerCase();
+            const filtered = allQuestions.filter(q => q.text.toLowerCase().includes(searchTerm));
+            renderTable(filtered);
+        }
+
+        function renderTable(questions) {
+            const tbody = document.getElementById('qBody');
+            tbody.innerHTML = '';
+
+            // Reset Select All and Buttons
+            document.getElementById('selectAll').checked = false;
+            updateButtonStates();
+
+            if (questions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3">No questions found.</td></tr>';
+                return;
+            }
+
+            questions.forEach(q => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                <td><input type="checkbox" class="q-check" value="${q._id}" onchange="updateButtonStates()"></td>
+                <td>${q.text}</td>
+                <td>${q.courseName}</td>
+            `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function toggleSelectAll() {
+            const master = document.getElementById('selectAll');
+            const cheeks = document.querySelectorAll('.q-check');
+            cheeks.forEach(c => c.checked = master.checked);
+            updateButtonStates();
+        }
+
+        function updateButtonStates() {
+            const count = document.querySelectorAll('.q-check:checked').length;
+            const btnDelete = document.getElementById('btnDelete');
+            const btnMove = document.getElementById('btnMove');
+
+            if (count > 0) {
+                btnDelete.disabled = false;
+                btnDelete.style.opacity = '1';
+                btnDelete.style.cursor = 'pointer';
+
+                btnMove.disabled = false;
+                btnMove.style.opacity = '1';
+                btnMove.style.cursor = 'pointer';
+            } else {
+                btnDelete.disabled = true;
+                btnDelete.style.opacity = '0.5';
+                btnDelete.style.cursor = 'not-allowed';
+
+                btnMove.disabled = true;
+                btnMove.style.opacity = '0.5';
+                btnMove.style.cursor = 'not-allowed';
+            }
+        }
+
+        function getSelectedIds() {
+            const cheeks = document.querySelectorAll('.q-check:checked');
+            return Array.from(cheeks).map(c => c.value);
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div style="font-weight: 500;">${message}</div>
+            `;
+
+            container.appendChild(toast);
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.3s ease-in forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        async function bulkDelete() {
+            const ids = getSelectedIds();
+            if (ids.length === 0) return;
+            if (!confirm(`Are you sure you want to delete ${ids.length} questions?`)) return;
+
+            try {
+                const res = await fetch(`${API_URL}/courses/questions/bulk-delete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ questionIds: ids })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    showToast(`${ids.length} questions successfully deleted.`);
+                    loadQuestions();
+                } else {
+                    showToast(data.message || 'Error deleting questions', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('Error deleting questions', 'error');
+            }
+        }
+
+        async function bulkMove() {
+            const ids = getSelectedIds();
+            const targetId = document.getElementById('targetCourse').value;
+            const targetSelect = document.getElementById('targetCourse');
+            const targetName = targetSelect.options[targetSelect.selectedIndex].text;
+
+            if (ids.length === 0) return;
+            if (!targetId) return alert('Select a target course'); // Keeping alert for validation, simple enough
+
+            if (!confirm(`Are you sure you want to move ${ids.length} questions to ${targetName}?`)) return;
+
+            try {
+                const res = await fetch(`${API_URL}/courses/questions/move`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ questionIds: ids, targetCourseId: targetId })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    showToast(`${ids.length} questions successfully moved to ${targetName}.`);
+                    loadQuestions();
+                } else {
+                    showToast(data.message || 'Error moving questions', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('Error moving questions', 'error');
+            }
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

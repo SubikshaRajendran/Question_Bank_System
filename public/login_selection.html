@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Login - Question Bank System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <nav>
+        <div class="logo">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                style="vertical-align: middle; margin-right: 8px;">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+            QB System
+        </div>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="student_login.html" class="active">Student Login</a></li>
+            <li><a href="admin_login.html" class="active">Admin Login</a></li>
+            <li><a href="about.html">About us</a></li>
+        </ul>
+    </nav>
+
+    <div class="container" style="text-align: center; margin-top: 4rem; max-width: 900px;">
+        <h2 style="font-size: 2.5rem; margin-bottom: 0.5rem;">Choose Login Type</h2>
+        <p class="subtitle" style="color: var(--text-secondary); margin-bottom: 3rem; font-size: 1.1rem;">Please select
+            your portal to continue</p>
+
+        <div class="login-selection-grid">
+            <a href="student_login.html" class="card login-card">
+                <div class="card-icon">
+                    <!-- Graduation Cap Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                        <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+                    </svg>
+                </div>
+                <h3>Student Login</h3>
+                <p>Access courses and questions</p>
+                <div class="card-action">Login &rarr;</div>
+            </a>
+
+            <a href="admin_login.html" class="card login-card">
+                <div class="card-icon">
+                    <!-- Shield/User Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                </div>
+                <h3>Admin Login</h3>
+                <p>Manage courses and content</p>
+                <div class="card-action">Login &rarr;</div>
+            </a>
+        </div>
+
+        <div style="margin-top: 3rem;">
+            <a href="index.html" class="back-link">&larr; Back to Home</a>
+        </div>
+    </div>
+</body>
+
+</html>

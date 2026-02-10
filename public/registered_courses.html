@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registered Courses - Question Bank System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>QB</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <nav>
+        <div class="logo">QB Student</div>
+        <ul>
+            <li><a href="student_dashboard.html">Available Courses</a></li>
+            <li><button id="themeToggleBtn" class="theme-toggle" onclick="toggleTheme()">🌙</button></li>
+            <li><a href="index.html" onclick="localStorage.clear()">Logout</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h2 class="section-header">My Registered Courses</h2>
+        <div id="courseList" class="bento-grid">
+            <p>Loading registered courses...</p>
+        </div>
+        <div id="emptyState" class="no-results" style="display: none;">
+            <h3>You haven't registered for any courses yet.</h3>
+            <a href="student_dashboard.html" class="btn" style="margin-top: 1rem;">Browse Courses</a>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/theme.js"></script>
+    <script>
+        if (localStorage.getItem('role') !== 'student') {
+            window.location.href = 'login_selection.html';
+        }
+
+        const user = JSON.parse(localStorage.getItem('user'));
+
+        async function loadRegisteredCourses() {
+            try {
+                if (!user || !user._id) {
+                    console.error('No user found in localStorage');
+                    document.getElementById('courseList').innerHTML = '<p>User not found. Please log in again.</p>';
+                    return;
+                }
+                const courses = await fetchRegisteredCourses(user._id);
+                renderCourses(courses);
+            } catch (err) {
+                console.error('Error fetching registered courses:', err);
+                document.getElementById('courseList').innerHTML = '<p>Error loading courses.</p>';
+            }
+        }
+
+        function renderCourses(courses) {
+            const list = document.getElementById('courseList');
+            const emptyState = document.getElementById('emptyState');
+            list.innerHTML = '';
+
+            if (!courses || courses.length === 0) {
+                list.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+            list.style.display = 'grid';
+            emptyState.style.display = 'none';
+
+            courses.forEach(course => {
+                const div = document.createElement('div');
+                div.className = 'bento-box';
+                
+                // Add difficulty badge if available
+                const difficultyBadge = course.difficulty ? `<span class="difficulty-badge difficulty-${course.difficulty}">${course.difficulty}</span>` : '';
+                
+                div.innerHTML = `
+                  <div class="bento-content">
+                      <div class="bento-meta">
+                        ${difficultyBadge}
+                      </div>
+                      <h3 class="bento-title">${course.title}</h3>
+                      <p class="bento-desc">${course.description || 'No description available.'}</p>
+                  </div>
+                  <div class="bento-actions" style="margin-top: 1rem;">
+                     <a href="registered_course_details.html?id=${course._id}" class="btn btn-sm" style="width: 100%; text-align: center;">View Details</a>
+                  </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        loadRegisteredCourses();
+    </script>
+</body>
+
+</html>

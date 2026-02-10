@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course View - Question Bank System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        .course-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .sidebar {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: var(--card-shadow);
+            height: fit-content;
+        }
+
+        .sidebar h4 {
+            margin-bottom: 1rem;
+        }
+
+        .filter-option {
+            display: block;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+        }
+
+        .filter-option:hover {
+            color: var(--primary-color);
+        }
+
+        .filter-active {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        @media (max-width: 768px) {
+            .course-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <div class="logo">QB Student</div>
+        <ul>
+            <li><a href="registered_courses.html">Back to My Courses</a></li>
+            <li><button id="themeToggleBtn" class="theme-toggle" onclick="toggleTheme()">🌙</button></li>
+            <li><a href="index.html">Logout</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <!-- Breadcrumbs -->
+        <div style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">
+            <a href="index.html" style="color: var(--primary-color); text-decoration: none;">Home</a> >
+            <a href="registered_courses.html" style="color: var(--primary-color); text-decoration: none;">My Courses</a>
+            >
+            <span id="crumbCourse" style="color: var(--text-color);">Course</span>
+        </div>
+
+        <h2 id="courseTitle">Loading...</h2>
+
+        <div class="progress-container">
+            <div id="progressBar" class="progress-bar" style="width: 0%"></div>
+        </div>
+        <p id="progressText" style="text-align: right; font-size: 0.9rem; color: var(--text-secondary);">0% Completed
+        </p>
+
+        <div class="course-layout">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <input type="text" id="questionSearch" onkeyup="applyFilters()" placeholder="Search in this course..."
+                    style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 1rem;">
+
+                <h4>Filters</h4>
+                <div class="filter-option filter-active" onclick="setFilter('all', this)">All Questions</div>
+                <div class="filter-option" onclick="setFilter('unread', this)">Unread Only</div>
+                <div class="filter-option" onclick="setFilter('flagged', this)">Flagged Only</div>
+                <div class="filter-option" onclick="setFilter('recent', this)">Recently Added</div>
+            </aside>
+
+            <!-- Content -->
+            <main id="questionsList">
+                <p>Loading questions...</p>
+            </main>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/theme.js"></script>
+    <script>
+        if (localStorage.getItem('role') !== 'student') {
+            window.location.href = 'login_selection.html';
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const courseId = urlParams.get('id');
+        const user = JSON.parse(localStorage.getItem('user'));
+
+        let totalQuestions = 0;
+        let readQuestionsCount = 0;
+        let allCourseQuestions = [];
+        let readQIds = [];
+        let flaggedQIds = [];
+        let currentFilter = 'all';
+
+        async function loadCourse() {
+            const data = await getCourse(courseId);
+            if (!data.course) {
+                alert('Course not found');
+                window.location.href = 'student_dashboard.html';
+                return;
+            }
+
+            document.getElementById('courseTitle').textContent = data.course.title;
+            // Breadcrumb Name
+            document.getElementById('crumbCourse').textContent = data.course.title;
+
+            const readQRes = await fetch(`${API_URL}/users/${user._id}/read-questions`);
+            readQIds = await readQRes.json();
+
+            const flagQRes = await fetch(`${API_URL}/users/${user._id}/flagged-questions`);
+            const flaggedObjs = await flagQRes.json();
+            flaggedQIds = flaggedObjs.map(f => f._id);
+
+            allCourseQuestions = data.questions || [];
+            totalQuestions = allCourseQuestions.length;
+
+            const courseQIds = allCourseQuestions.map(q => q._id);
+            const readInThisCourse = readQIds.filter(id => courseQIds.includes(id));
+            readQuestionsCount = readInThisCourse.length;
+
+            updateProgress();
+
+            renderQuestions(allCourseQuestions);
+        }
+
+        function renderQuestions(questions, highlightTerm = '') {
+            const list = document.getElementById('questionsList');
+            list.innerHTML = '';
+
+            if (questions.length === 0) {
+                list.innerHTML = '<p>No questions found.</p>';
+                return;
+            }
+
+            questions.forEach(q => {
+                const isRead = readQIds.includes(q._id);
+                const isFlagged = flaggedQIds.includes(q._id);
+
+                const div = document.createElement('div');
+                div.className = 'question-card'; // Changed from question-item
+                div.id = `q-${q._id}`;
+
+                let textContent = q.text;
+                if (highlightTerm) {
+                    const regex = new RegExp(`(${highlightTerm})`, 'gi');
+                    textContent = textContent.replace(regex, '<span class="highlight">$1</span>');
+                }
+
+                div.innerHTML = `
+          <p style="margin: 0 0 1rem 0; font-size: 1.1rem; color: var(--text-color);">${textContent}</p>
+          <div class="question-actions" style="display:flex; gap: 1rem;">
+            ${isRead ?
+                        '<span class="btn-sm" style="color: var(--success); border: 1px solid var(--success); padding: 0.5rem; border-radius: 4px;">✅ Read</span>' :
+                        `<button class="btn btn-secondary btn-sm" onclick="markRead('${q._id}')">Mark as Read</button>`
+                    }
+            <button class="btn btn-secondary btn-sm" style="border-color: var(--danger); color: var(--danger);" onclick="markFlagged('${q._id}')">
+                ${isFlagged ? 'Flagged' : 'Flag for Review'}
+            </button>
+          </div>
+        `;
+                list.appendChild(div);
+            });
+        }
+
+        function setFilter(type, el) {
+            document.querySelectorAll('.filter-option').forEach(e => e.classList.remove('filter-active'));
+            el.classList.add('filter-active');
+            currentFilter = type;
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('questionSearch').value.toLowerCase();
+            let filtered = [...allCourseQuestions];
+
+            // Type Filter
+            if (currentFilter === 'unread') {
+                filtered = filtered.filter(q => !readQIds.includes(q._id));
+            } else if (currentFilter === 'flagged') {
+                filtered = filtered.filter(q => flaggedQIds.includes(q._id));
+            } else if (currentFilter === 'recent') {
+                filtered.sort((a, b) => (a._id > b._id ? -1 : 1));
+            }
+
+            // Search Filter
+            if (searchTerm) {
+                filtered = filtered.filter(q => q.text.toLowerCase().includes(searchTerm));
+            }
+
+            renderQuestions(filtered, searchTerm);
+        }
+
+        function updateProgress() {
+            const pct = totalQuestions === 0 ? 0 : Math.round((readQuestionsCount / totalQuestions) * 100);
+            document.getElementById('progressBar').style.width = `${pct}%`;
+            document.getElementById('progressText').textContent = `${pct}% Completed`;
+
+            if (pct === 100 && totalQuestions > 0) {
+                triggerConfetti();
+            }
+        }
+
+        async function markRead(qId) {
+            try {
+                await fetch(`${API_URL}/users/${user._id}/read-question`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ questionId: qId })
+                });
+                readQuestionsCount++;
+                readQIds.push(qId);
+                updateProgress();
+
+                const qDiv = document.getElementById(`q-${qId}`);
+                if (qDiv) {
+                    const actions = qDiv.querySelector('.question-actions');
+                    actions.innerHTML = `
+                    <span class="btn-sm" style="color: var(--success); border: 1px solid var(--success); padding: 0.5rem; border-radius: 4px;">✅ Read</span>
+                    <button class="btn btn-secondary btn-sm" style="border-color: var(--danger); color: var(--danger);" onclick="markFlagged('${qId}')">Flag for Review</button>
+                    `;
+                    qDiv.classList.add('animate-pop');
+                    setTimeout(() => qDiv.classList.remove('animate-pop'), 200);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function markFlagged(qId) {
+            try {
+                const res = await fetch(`${API_URL}/users/${user._id}/flag-question`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ questionId: qId })
+                });
+                const updatedFlags = await res.json();
+
+                // Update local state
+                flaggedQIds = updatedFlags;
+                const isNowFlagged = flaggedQIds.includes(qId);
+
+                const qDiv = document.getElementById(`q-${qId}`);
+                if (qDiv) {
+                    qDiv.classList.add('animate-pop');
+                    setTimeout(() => qDiv.classList.remove('animate-pop'), 200);
+
+                    // Update button
+                    const btn = qDiv.querySelector('.question-actions button:last-child');
+                    if (btn) {
+                        btn.textContent = isNowFlagged ? 'Flagged' : 'Flag for Review';
+                        // Optional: Change style based on state if needed, though 'Flagged' usually implies active
+                    }
+                }
+
+                alert(isNowFlagged ? 'Flagged for review!' : 'Unflagged successfully.');
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 150,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        loadCourse();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - Question Bank System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>QB</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            width: 80%;
+            max-width: 600px;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .close {
+            color: var(--text-secondary);
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .review-widget {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--card-shadow);
+        }
+
+        .review-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .review-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <div class="logo">Welcome, buddy</div>
+        <ul>
+            <li><a href="registered_courses.html">Registered Courses</a></li>
+            <li><a href="review_later.html">Review Later</a></li>
+            <li><button id="themeToggleBtn" class="theme-toggle" onclick="toggleTheme()">🌙</button></li>
+            <li><a href="index.html" onclick="logout()">Logout</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+
+        <!-- Filters -->
+        <div class="filters-bar">
+            <input type="text" id="searchInput" placeholder="Search courses..." style="width: auto; flex-grow: 1;">
+            <select id="difficultyFilter" onchange="filterCourses()">
+                <option value="">All Difficulties</option>
+                <option value="Easy">Easy</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+            </select>
+        </div>
+
+        <div id="courseList" class="student-grid">
+            <p>Loading courses...</p>
+        </div>
+
+        <div id="noResults" class="no-results" style="display: none;">
+            <h3>No Results Found</h3>
+            <p>Try searching for different keywords or checking other categories.</p>
+        </div>
+    </div>
+
+    <footer class="main-footer">
+        <div class="container" style="text-align: center;">
+            <p>&copy; 2026 Question Bank System. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script src="js/theme.js"></script>
+    <script>
+        if (localStorage.getItem('role') !== 'student') {
+            window.location.href = 'login_selection.html';
+        }
+
+        const localUser = JSON.parse(localStorage.getItem('user'));
+        // Ensure safe user state
+        if (localUser && !localUser.registeredCourses) {
+            alert('System updated. Please login again.');
+            localStorage.removeItem('user');
+            window.location.href = 'student_login.html';
+        }
+
+        function logout() {
+            localStorage.clear();
+        }
+
+        let allCourses = [];
+
+        async function loadData() {
+            const [courses, userData] = await Promise.all([
+                fetchCourses(),
+                fetchUserDashboardData(localUser._id) // Returns registered courses with progress
+            ]);
+
+            const registeredMap = {};
+            if (userData && userData.length > 0) {
+                userData.forEach(c => registeredMap[c._id] = c);
+            }
+
+            allCourses = courses.map(c => {
+                if (registeredMap[c._id]) {
+                    return { ...c, isRegistered: true, progress: registeredMap[c._id].progress };
+                }
+                return c;
+            });
+
+            renderCourses(allCourses);
+        }
+
+        function renderCourses(courses, highlightTerm = '') {
+            const list = document.getElementById('courseList');
+            const noRes = document.getElementById('noResults');
+            list.innerHTML = '';
+
+            if (courses.length === 0) {
+                list.style.display = 'none';
+                noRes.style.display = 'block';
+                return;
+            }
+            list.style.display = 'grid';
+            noRes.style.display = 'none';
+
+            courses.forEach((course) => {
+                const div = document.createElement('div');
+                div.className = 'bento-box';
+
+                const difficultyBadge = course.difficulty ? `<span class="difficulty-badge difficulty-${course.difficulty}">${course.difficulty}</span>` : '';
+                const tagsHtml = (course.tags || []).map(t => `<span class="tag">#${t}</span>`).join('');
+
+                // Progress Color Logic
+                let progressClass = 'progress-blue';
+                const p = course.progress || 0;
+                if (p < 30) progressClass = 'progress-orange';
+                else if (p >= 100) progressClass = 'progress-green';
+
+                // Button Text Logic
+                let btnText = 'Start Learning';
+                if (p === 100) btnText = 'Completed';
+                else if (p > 0) btnText = 'Continue';
+
+                // Registered Check for "Start/View"
+                const mainBtnAction = course.isRegistered
+                    ? `window.location.href='course_preview.html?id=${course._id}'`
+                    : `window.location.href='course_preview.html?id=${course._id}'`; // View leads to preview/registration
+                const mainBtnLabel = course.isRegistered ? btnText : 'View Course';
+
+                // Description (Hidden by default)
+                let descHtml = course.description || 'No description available.';
+                if (highlightTerm) {
+                    const regex = new RegExp(`(${highlightTerm})`, 'gi');
+                    descHtml = descHtml.replace(regex, '<span class="highlight">$1</span>');
+                }
+
+                // Progress Bar HTML
+                let progressHtml = '';
+                if (course.isRegistered) {
+                    progressHtml = `
+                    <div class="bottom-spacer progress-wrapper">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.2rem;">
+                            <span>Progress</span>
+                            <span>${p}%</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar ${progressClass}" style="width: ${p}%"></div>
+                        </div>
+                    </div>`;
+                } else {
+                    // Empty spacer to push buttons down
+                    progressHtml = `<div class="bottom-spacer"></div>`;
+                }
+
+                div.innerHTML = `
+                  <div class="course-card-content">
+                      <div class="bento-meta">
+                        ${difficultyBadge}
+                        ${tagsHtml}
+                      </div>
+                      <h3 class="bento-title">${course.title}</h3>
+                      
+                      <!-- Hidden Description -->
+                      <div id="desc-${course._id}" class="course-desc-hidden">
+                        ${descHtml}
+                      </div>
+
+                      ${progressHtml}
+
+                      <div class="bento-actions" style="display: flex; gap: 0.5rem;">
+                         <button class="btn btn-secondary btn-sm" onclick="toggleDesc('${course._id}')">
+                            <i class="icon-info"></i> Info
+                         </button>
+                         <button class="btn btn-sm" onclick="${mainBtnAction}">
+                            ${mainBtnLabel}
+                         </button>
+                      </div>
+                  </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function toggleDesc(id) {
+            const el = document.getElementById(`desc-${id}`);
+            if (el.style.display === 'block') {
+                el.style.display = 'none';
+            } else {
+                el.style.display = 'block';
+                el.classList.add('show-desc');
+            }
+        }
+
+        function filterCourses() {
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            const diff = document.getElementById('difficultyFilter').value;
+
+            const filtered = allCourses.filter(c => {
+                const matchesTerm = c.title.toLowerCase().includes(term) || (c.description && c.description.toLowerCase().includes(term));
+                const matchesDiff = diff ? c.difficulty === diff : true;
+                return matchesTerm && matchesDiff;
+            });
+
+            renderCourses(filtered, term);
+        }
+
+        document.getElementById('searchInput').addEventListener('keyup', filterCourses);
+
+        loadData();
+    </script>
+</body>
+
+</html>

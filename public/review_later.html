@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review Later - Question Bank System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <nav>
+        <div class="logo">QB Student</div>
+        <ul>
+            <li><a href="student_dashboard.html">Dashboard</a></li>
+            <li><button id="themeToggleBtn" class="theme-toggle" onclick="toggleTheme()">🌙</button></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h2>Review Later (Flagged Questions)</h2>
+        <div id="questionList" style="margin-top: 2rem;">
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/theme.js"></script>
+    <script>
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user) window.location.href = 'student_login.html';
+
+        async function loadFlagged() {
+            // Need a robust way to fetch flagged questions. User model has IDs.
+            // We added /api/users/:id/flagged-questions route
+            try {
+                const res = await fetch(`${API_URL}/users/${user._id}/flagged-questions`);
+                const questions = await res.json();
+
+                const list = document.getElementById('questionList');
+                list.innerHTML = '';
+
+                if (!questions || questions.length === 0) {
+                    list.innerHTML = '<p>No flagged questions.</p>';
+                    return;
+                }
+
+                questions.forEach(q => {
+                    const div = document.createElement('div');
+                    div.className = 'card';
+                    div.innerHTML = `
+                    <p style="font-size: 1.1rem; margin-bottom: 1rem;">${q.text}</p>
+                    <span class="tag">Flagged</span>
+                `;
+                    list.appendChild(div);
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+        loadFlagged();
+    </script>
+</body>
+
+</html>
