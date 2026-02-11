@@ -299,6 +299,115 @@ h2,
   grid-auto-flow: dense;
 }
 
+/* --- Responsive Navigation & Layout --- */
+
+/* Default (Desktop) */
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-color);
+}
+
+.mobile-only {
+  display: none;
+}
+
+/* Mobile Screens (Match breakpoint, e.g. 768px) */
+@media (max-width: 768px) {
+
+  /* Navigation */
+  nav {
+    padding: 1rem;
+  }
+
+  .mobile-menu-btn {
+    display: block;
+  }
+
+  .desktop-only {
+    display: none;
+  }
+
+  .mobile-only {
+    display: block;
+  }
+
+  .nav-links {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: var(--header-bg);
+    backdrop-filter: blur(12px);
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-bottom: var(--glass-border);
+
+    /* Animation state */
+    display: none;
+    transform: translateY(-20px);
+    opacity: 0;
+    transition: all 0.3s ease;
+  }
+
+  .nav-links.active {
+    display: flex;
+    /* Override display:none */
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  /* Adjust Logout Button in Mobile Menu */
+  .nav-btn-logout {
+    width: 100%;
+    text-align: center;
+    padding: 0.75rem;
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+    border-radius: 0.5rem;
+  }
+
+  /* Container */
+  .container {
+    padding: 0 1rem;
+    margin: 1.5rem auto;
+  }
+
+  /* Typography */
+  h2,
+  .section-header {
+    font-size: 1.75rem;
+  }
+
+  /* Forms */
+  .form-group label {
+    font-size: 0.9rem;
+  }
+
+  .btn {
+    width: 100%;
+    /* Full width buttons on mobile often look better */
+    margin-bottom: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  nav .logo {
+    font-size: 1.4rem;
+  }
+
+  h2,
+  .section-header {
+    font-size: 1.5rem;
+  }
+}
+
+
 .bento-box {
   background: var(--card-bg);
   padding: 1.75rem;
