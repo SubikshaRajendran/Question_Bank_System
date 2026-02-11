@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json()); // Built-in parsing
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+// app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Global Error Handler for JSON parsing errors
@@ -48,6 +48,15 @@ app.get('/api/health', (req, res) => {
 // Catch-all for API 404
 app.use('/api/*', (req, res) => {
     res.status(404).json({ error: 'API endpoint not found' });
+});
+
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, 'client/dist')));
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'client/dist/index.html'));
 });
 
 app.listen(PORT, () => {
