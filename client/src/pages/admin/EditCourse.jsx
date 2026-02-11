@@ -82,7 +82,7 @@ const EditCourse = () => {
             }
 
             const token = localStorage.getItem('token');
-            const res = await fetch(`http://localhost:3000/api/courses/${id}`, {
+            const res = await fetch(`/api/courses/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`

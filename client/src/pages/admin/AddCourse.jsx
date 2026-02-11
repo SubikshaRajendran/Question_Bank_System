@@ -44,7 +44,7 @@ const AddCourse = () => {
             // We need to NOT set Content-Type for FormData.
 
             const token = localStorage.getItem('token');
-            const res = await fetch('http://localhost:3000/api/courses', {
+            const res = await fetch('/api/courses', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`

@@ -184,7 +184,7 @@ const CourseView = () => {
             {course.image && (
                 <div style={{ height: '300px', borderRadius: '1rem', overflow: 'hidden', marginBottom: '2rem', boxShadow: 'var(--card-shadow)' }}>
                     <img
-                        src={`http://localhost:3000${course.image}`}
+                        src={`${course.image}`}
                         alt={course.title}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         onError={(e) => { e.target.style.display = 'none'; }}

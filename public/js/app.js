@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/api';
+const API_URL = '/api';
 
 async function fetchCourses() {
     const res = await fetch(`${API_URL}/courses`);

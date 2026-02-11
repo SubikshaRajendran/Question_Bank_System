@@ -74,7 +74,7 @@ const CourseCard = ({ course }) => {
             {course.image && (
                 <div style={{ width: '100%', aspectRatio: '16/9', borderBottom: '1px solid var(--border-color)', backgroundColor: '#f3f4f6', overflow: 'hidden' }}>
                     <img
-                        src={`http://localhost:3000${course.image}`}
+                        src={`${course.image}`}
                         alt={title}
                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                         onError={(e) => { e.target.style.display = 'none'; }}
