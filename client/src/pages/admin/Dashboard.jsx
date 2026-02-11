@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchApi } from '../../utils/api';
-import { Search, Plus, Trash2, Edit, BookOpen } from 'lucide-react';
+import { Search, Plus, Trash2, Edit, BookOpen, Filter } from 'lucide-react';
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState({ totalCourses: 0, totalQuestions: 0, totalStudents: 0 });
@@ -9,6 +9,8 @@ const AdminDashboard = () => {
     const [filteredCourses, setFilteredCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [difficultyFilter, setDifficultyFilter] = useState('');
+    const [departmentFilter, setDepartmentFilter] = useState('');
     const [page, setPage] = useState(1);
     const itemsPerPage = 5;
 
@@ -33,11 +35,27 @@ const AdminDashboard = () => {
     };
 
     useEffect(() => {
-        const term = searchTerm.toLowerCase();
-        const filtered = courses.filter(c => c.title.toLowerCase().includes(term));
-        setFilteredCourses(filtered);
+        let result = courses;
+
+        // Search Filter
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            result = result.filter(c => c.title.toLowerCase().includes(term));
+        }
+
+        // Difficulty Filter
+        if (difficultyFilter) {
+            result = result.filter(c => c.difficulty === difficultyFilter);
+        }
+
+        // Department Filter
+        if (departmentFilter) {
+            result = result.filter(c => c.department === departmentFilter);
+        }
+
+        setFilteredCourses(result);
         setPage(1);
-    }, [searchTerm, courses]);
+    }, [searchTerm, difficultyFilter, departmentFilter, courses]);
 
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this course? This action cannot be undone.')) return;
@@ -82,15 +100,46 @@ const AdminDashboard = () => {
             </div>
 
             {/* Search */}
-            <div className="search-container" style={{ position: 'relative', marginBottom: '1rem' }}>
-                <Search size={20} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                <input
-                    type="text"
-                    placeholder="Search courses by title..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{ width: '100%', padding: '0.75rem 0.75rem 0.75rem 2.5rem', border: '1px solid var(--border-color)', borderRadius: '0.375rem' }}
-                />
+            {/* Filters Bar */}
+            <div className="filters-bar" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                <div style={{ position: 'relative', flexGrow: 1, minWidth: '200px' }}>
+                    <Search size={22} style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                    <input
+                        type="text"
+                        placeholder="Search courses..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{ paddingLeft: '3rem', padding: '0.8rem 1rem 0.8rem 3rem', fontSize: '1rem', width: '100%', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}
+                    />
+                </div>
+
+                <div style={{ position: 'relative', minWidth: '180px' }}>
+                    <Filter size={20} style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-secondary)' }} />
+                    <select
+                        value={difficultyFilter}
+                        onChange={(e) => setDifficultyFilter(e.target.value)}
+                        style={{ appearance: 'none', padding: '0.8rem', fontSize: '1rem', width: '100%', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-color)' }}
+                    >
+                        <option value="">All Levels</option>
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                    </select>
+                </div>
+
+                <div style={{ position: 'relative', minWidth: '180px' }}>
+                    <Filter size={20} style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-secondary)' }} />
+                    <select
+                        value={departmentFilter}
+                        onChange={(e) => setDepartmentFilter(e.target.value)}
+                        style={{ appearance: 'none', padding: '0.8rem', fontSize: '1rem', width: '100%', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-color)' }}
+                    >
+                        <option value="">All Departments</option>
+                        <option value="CS Cluster">CS Cluster</option>
+                        <option value="Core">Core</option>
+                        <option value="General/Common">General/Common</option>
+                    </select>
+                </div>
             </div>
 
             {/* Course List */}

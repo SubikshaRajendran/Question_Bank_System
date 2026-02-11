@@ -9,7 +9,17 @@ const Layout = () => {
     const location = useLocation();
     const [showLoginMenu, setShowLoginMenu] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
+    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
     const dropdownRef = React.useRef(null);
+
+    React.useEffect(() => {
+        document.body.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+    }, [theme]);
+
+    const toggleTheme = () => {
+        setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
+    };
 
     React.useEffect(() => {
         const handleClickOutside = (event) => {
@@ -40,6 +50,8 @@ const Layout = () => {
                         {user ? (user.role === 'student' ? 'QB Student' : 'QB Admin') : 'QB System'}
                     </span>
                 </div>
+
+
 
                 {/* Mobile Menu Button */}
                 <button
@@ -114,6 +126,17 @@ const Layout = () => {
                             <li><button onClick={handleLogout} className="nav-btn-logout">Logout</button></li>
                         </>
                     )}
+                    {/* Theme Toggle in Nav */}
+                    <li style={{ display: 'flex', alignItems: 'center' }}>
+                        <button
+                            onClick={toggleTheme}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', display: 'flex', alignItems: 'center' }}
+                            aria-label="Toggle Theme"
+                            title="Toggle Dark Mode"
+                        >
+                            {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+                        </button>
+                    </li>
                 </ul>
             </nav>
 
