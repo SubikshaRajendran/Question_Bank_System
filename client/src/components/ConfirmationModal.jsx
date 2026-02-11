@@ -30,13 +30,15 @@ const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel, confir
                 <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.25rem' }}>{title}</h3>
                 <p style={{ marginBottom: '2rem', color: 'var(--text-secondary)' }}>{message}</p>
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
-                    <button
-                        onClick={onCancel}
-                        className="btn btn-secondary"
-                        style={{ minWidth: '80px' }}
-                    >
-                        {cancelText}
-                    </button>
+                    {onCancel && (
+                        <button
+                            onClick={onCancel}
+                            className="btn btn-secondary"
+                            style={{ minWidth: '80px' }}
+                        >
+                            {cancelText}
+                        </button>
+                    )}
                     <button
                         onClick={onConfirm}
                         className="btn"

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { fetchApi } from '../../utils/api';
 import { Link } from 'react-router-dom';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const AdminComments = () => {
     const [comments, setComments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [replyingId, setReplyingId] = useState(null);
     const [replyText, setReplyText] = useState('');
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     useEffect(() => {
         loadComments();
@@ -34,7 +36,7 @@ const AdminComments = () => {
             setComments(comments.map(c => c._id === cId ? updatedComment : c));
             setReplyingId(null);
             setReplyText('');
-            alert('Reply sent!');
+            setShowSuccessModal(true);
         } catch (err) {
             console.error("Failed to send reply", err);
             alert("Failed to send reply");
@@ -119,6 +121,14 @@ const AdminComments = () => {
                     </div>
                 ))
             )}
+            {/* Success Modal */}
+            <ConfirmationModal
+                isOpen={showSuccessModal}
+                title="Success"
+                message="Reply sent!"
+                confirmText="OK"
+                onConfirm={() => setShowSuccessModal(false)}
+            />
         </div>
     );
 };

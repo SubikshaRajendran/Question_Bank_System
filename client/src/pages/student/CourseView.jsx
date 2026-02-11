@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { fetchApi } from '../../utils/api';
 import { Check, Flag } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const CourseView = () => {
     const { id } = useParams();
@@ -25,6 +26,7 @@ const CourseView = () => {
     // Comment State
     const [commentingQId, setCommentingQId] = useState(null);
     const [commentText, setCommentText] = useState('');
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     const handleAddComment = async (qId) => {
         if (!commentText.trim()) return;
@@ -40,7 +42,7 @@ const CourseView = () => {
             });
             setCommentingQId(null);
             setCommentText('');
-            alert('Comment submitted!');
+            setShowSuccessModal(true);
         } catch (err) {
             console.error('Failed to submit comment', err);
             alert('Failed to submit comment');
@@ -318,6 +320,14 @@ const CourseView = () => {
                     )}
                 </main>
             </div>
+            {/* Success Modal */}
+            <ConfirmationModal
+                isOpen={showSuccessModal}
+                title="Success"
+                message="Your Comment submitted!"
+                confirmText="OK"
+                onConfirm={() => setShowSuccessModal(false)}
+            />
         </div>
     );
 };
