@@ -12,6 +12,7 @@ const AddCourse = () => {
     const [image, setImage] = useState(null);
     const [loading, setLoading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [createdCourseId, setCreatedCourseId] = useState(null);
     const navigate = useNavigate();
     const { user } = useAuth();
 
@@ -58,6 +59,8 @@ const AddCourse = () => {
                 throw new Error(data.error || 'Failed to create course');
             }
 
+            const data = await res.json();
+            setCreatedCourseId(data._id);
             setShowSuccess(true);
         } catch (err) {
             console.error("Failed to create course", err);
@@ -174,13 +177,22 @@ const AddCourse = () => {
                         <p style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
                             Course created successfully.
                         </p>
-                        <button
-                            className="btn"
-                            onClick={() => navigate('/admin/dashboard')}
-                            style={{ width: '100%' }}
-                        >
-                            Go to Dashboard
-                        </button>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <button
+                                className="btn"
+                                onClick={() => navigate('/admin/dashboard')}
+                                style={{ width: '100%' }}
+                            >
+                                Go to Dashboard
+                            </button>
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => navigate(`/admin/course/edit/${createdCourseId}`)}
+                                style={{ width: '100%' }}
+                            >
+                                View Course (Edit)
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
