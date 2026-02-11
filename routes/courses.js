@@ -21,17 +21,41 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-// Configure Multer Storage
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/');
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname)); // Append extension
-    }
+const mult = require('multer'); // Wait, 'multer' is at line 7. Cleaning up imports.
+const streamifier = require('streamifier');
+
+const cloudinary = require('cloudinary').v2;
+
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+
+// Configure Cloudinary
+cloudinary.config({
+    cloud_name: 'dqi4crgop',
+    api_key: '862391676162651',
+    api_secret: 'fMg_2vRP_5NCLTeLuM56SxSjuUQ'
 });
 
+console.log("Cloudinary Config:", cloudinary.config()); // Debugging line
+
+// Configure Multer to use memory storage
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
+
+const streamUpload = (req) => {
+    return new Promise((resolve, reject) => {
+        let stream = cloudinary.uploader.upload_stream(
+            { folder: 'qb_courses' },
+            (error, result) => {
+                if (result) {
+                    resolve(result);
+                } else {
+                    reject(error);
+                }
+            }
+        );
+        streamifier.createReadStream(req.file.buffer).pipe(stream);
+    });
+};
 
 // Get all courses with filtering
 router.get('/', async (req, res) => {
@@ -49,7 +73,6 @@ router.get('/', async (req, res) => {
             query.difficulty = difficulty;
         }
         if (tags) {
-            // Assuming tags is comma separated
             const tagList = tags.split(',').map(t => t.trim());
             query.tags = { $in: tagList };
         }
@@ -66,15 +89,18 @@ router.post('/', upload.single('image'), async (req, res) => {
     const { title, description, difficulty, department, tags } = req.body;
     let image = '';
 
-    if (req.file) {
-        image = `/uploads/${req.file.filename}`;
-    }
-
     try {
+        if (req.file) {
+            // Manual upload to Cloudinary
+            const result = await streamUpload(req);
+            image = result.secure_url;
+        }
+
         const newCourse = new Course({ title, description, difficulty, department, tags: tags ? tags.split(',') : [], image });
         await newCourse.save();
         res.json(newCourse);
     } catch (err) {
+        console.error("Upload Error:", err);
         res.status(400).json({ error: err.message });
     }
 });
@@ -84,8 +110,6 @@ router.get('/:id', async (req, res) => {
     try {
         const course = await Course.findById(req.params.id);
         const questions = await Question.find({ courseId: req.params.id });
-
-        // Count registered students
         const studentCount = await require('../models/User').countDocuments({ registeredCourses: req.params.id });
 
         res.json({ course, questions, studentCount });
@@ -99,14 +123,16 @@ router.put('/:id', upload.single('image'), async (req, res) => {
     const { title, description, difficulty, department, tags } = req.body;
     let updateData = { title, description, difficulty, department, tags: tags ? tags.split(',') : [] };
 
-    if (req.file) {
-        updateData.image = `/uploads/${req.file.filename}`;
-    }
-
     try {
+        if (req.file) {
+            const result = await streamUpload(req);
+            updateData.image = result.secure_url;
+        }
+
         const updatedCourse = await Course.findByIdAndUpdate(req.params.id, updateData, { new: true });
         res.json(updatedCourse);
     } catch (err) {
+        console.error("Update Error:", err);
         res.status(400).json({ error: err.message });
     }
 });

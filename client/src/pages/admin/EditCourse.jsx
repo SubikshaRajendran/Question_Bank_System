@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx';
 import { fetchApi } from '../../utils/api';
 import { Trash2, AlertTriangle, ArrowLeft, Save, X, Edit2 } from 'lucide-react';
 import Toast from '../../components/Toast';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const EditCourse = () => {
     const { id } = useParams();
@@ -30,6 +31,11 @@ const EditCourse = () => {
     const [activeTab, setActiveTab] = useState('details');
     const [isEditingDetails, setIsEditingDetails] = useState(false);
     const [selectedQuestionIds, setSelectedQuestionIds] = useState([]);
+
+    // Modal State
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [pendingQuestions, setPendingQuestions] = useState([]);
+    const [importModalMessage, setImportModalMessage] = useState('');
 
     // Ref for inline edit input
     const editInputRef = useRef(null);
@@ -170,27 +176,52 @@ const EditCourse = () => {
                     return;
                 }
 
-                if (!window.confirm(`Found ${extractedQuestions.length} questions. Import them?`)) return;
+                if (extractedQuestions.length === 0) {
+                    showToast('No valid questions found in file.', 'warning');
+                    return;
+                }
 
-                setActionLoading(true);
-                // Send to backend
-                const insertedQuestions = await fetchApi('/questions/bulk-create', {
-                    method: 'POST',
-                    body: JSON.stringify({ questions: extractedQuestions, courseId: id })
-                });
+                // Show confirmation modal instead of window.confirm
+                setPendingQuestions(extractedQuestions);
+                setImportModalMessage(`Found ${extractedQuestions.length} questions. Import them?`);
+                setShowImportModal(true);
 
-                setQuestions([...questions, ...insertedQuestions]);
-                showToast(`Successfully imported ${insertedQuestions.length} questions!`);
+                // Reset file input here as we've read it
+                e.target.value = null;
+
             } catch (err) {
                 console.error("Import failed", err);
                 showToast('Failed to import questions. Check file format.', 'error');
-            } finally {
-                setActionLoading(false);
-                // Reset input
-                e.target.value = null;
+                e.target.value = null; // Reset on error too
             }
         };
         reader.readAsBinaryString(file);
+    };
+
+    const confirmImport = async () => {
+        setShowImportModal(false);
+        setActionLoading(true);
+        try {
+            // Send to backend
+            const insertedQuestions = await fetchApi('/questions/bulk-create', {
+                method: 'POST',
+                body: JSON.stringify({ questions: pendingQuestions, courseId: id })
+            });
+
+            setQuestions([...questions, ...insertedQuestions]);
+            showToast(`Successfully imported ${insertedQuestions.length} questions!`);
+        } catch (err) {
+            console.error("Import failed", err);
+            showToast('Failed to import questions. Check file format.', 'error');
+        } finally {
+            setActionLoading(false);
+            setPendingQuestions([]);
+        }
+    };
+
+    const cancelImport = () => {
+        setShowImportModal(false);
+        setPendingQuestions([]);
     };
 
     const handleDeleteQuestion = async (qId) => {
@@ -603,6 +634,16 @@ const EditCourse = () => {
                     </div>
                 </>
             )}
+            {/* Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showImportModal}
+                title="Confirm Import"
+                message={importModalMessage}
+                onConfirm={confirmImport}
+                onCancel={cancelImport}
+                confirmText="Yes, Import"
+                cancelText="No"
+            />
         </div>
     );
 };
