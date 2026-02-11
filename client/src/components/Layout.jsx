@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { BookOpen, LogOut, Moon, Sun, Menu, X } from 'lucide-react';
+import logo from '../assets/logo.png';
 
 const Layout = () => {
     const { user, logout } = useAuth();
@@ -44,10 +45,10 @@ const Layout = () => {
     return (
         <>
             <nav className="navbar">
-                <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.8rem', fontWeight: '800' }}>
-                    <BookOpen size={32} strokeWidth={2.5} />
-                    <span style={{ letterSpacing: '-0.5px' }}>
-                        {user ? (user.role === 'student' ? 'QB Student' : 'QB Admin') : 'QB System'}
+                <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <img src={logo} alt="Logo" style={{ height: '52px', width: 'auto' }} />
+                    <span style={{ fontSize: '22px', fontWeight: '600', color: 'var(--brand-text-primary)', letterSpacing: '-0.5px' }}>
+                        Question Bank System
                     </span>
                 </div>
 
