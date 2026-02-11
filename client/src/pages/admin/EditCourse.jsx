@@ -36,6 +36,7 @@ const EditCourse = () => {
     const [showImportModal, setShowImportModal] = useState(false);
     const [pendingQuestions, setPendingQuestions] = useState([]);
     const [importModalMessage, setImportModalMessage] = useState('');
+    const [showDeleteCourseModal, setShowDeleteCourseModal] = useState(false);
 
     // Ref for inline edit input
     const editInputRef = useRef(null);
@@ -116,7 +117,11 @@ const EditCourse = () => {
     };
 
     const handleDeleteCourse = async () => {
-        if (!window.confirm('Are you sure you want to delete this course? This action cannot be undone.')) return;
+        setShowDeleteCourseModal(true);
+    };
+
+    const confirmDeleteCourse = async () => {
+        setShowDeleteCourseModal(false);
         try {
             await fetchApi(`/courses/${id}`, { method: 'DELETE' });
             navigate('/admin/dashboard');
@@ -642,6 +647,17 @@ const EditCourse = () => {
                 onConfirm={confirmImport}
                 onCancel={cancelImport}
                 confirmText="Yes, Import"
+                cancelText="No"
+            />
+
+            {/* Delete Course Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showDeleteCourseModal}
+                title="Delete Course"
+                message="Are you sure you want to delete this course? This action cannot be undone."
+                onConfirm={confirmDeleteCourse}
+                onCancel={() => setShowDeleteCourseModal(false)}
+                confirmText="Yes, Delete"
                 cancelText="No"
             />
         </div>

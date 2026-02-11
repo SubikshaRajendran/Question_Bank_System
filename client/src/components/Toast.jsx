@@ -17,21 +17,20 @@ const Toast = ({ message, type = 'success', onClose, duration = 3000 }) => {
     return (
         <div style={{
             position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
+            top: '20px',
+            right: '20px',
             backgroundColor: bgColor,
             color: 'white',
-            padding: '1.5rem 2rem',
-            borderRadius: '12px',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+            padding: '1rem 1.5rem',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
             display: 'flex',
             alignItems: 'center',
-            gap: '1rem',
+            gap: '0.75rem',
             zIndex: 9999,
-            animation: 'fadeInScale 0.3s ease-out',
-            minWidth: '350px',
-            maxWidth: '90%'
+            animation: 'slideInRight 0.3s ease-out',
+            minWidth: '300px',
+            maxWidth: '400px'
         }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.2)', padding: '0.5rem', borderRadius: '50%' }}>
                 {icon}
@@ -53,9 +52,9 @@ const Toast = ({ message, type = 'success', onClose, duration = 3000 }) => {
                 <X size={20} />
             </button>
             <style>{`
-        @keyframes fadeInScale {
-          from { transform: translate(-50%, -50%) scale(0.9); opacity: 0; }
-          to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        @keyframes slideInRight {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
         }
       `}</style>
         </div>
