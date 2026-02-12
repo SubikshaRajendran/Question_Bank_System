@@ -17,6 +17,20 @@ router.post('/:id/register-course', async (req, res) => {
     }
 });
 
+// Get ALL students (for Admin)
+router.get('/', async (req, res) => {
+    try {
+        // Fetch all users, sorted by most recent activity (lastLogin) desc
+        // Filter out users who have never logged in (old records without lastLogin)
+        const users = await User.find({ lastLogin: { $exists: true, $ne: null } })
+            .select('username email lastLogin createdAt name')
+            .sort({ lastLogin: -1 });
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Get registered courses with progress
 router.get('/:id/registered-courses', async (req, res) => {
     try {
