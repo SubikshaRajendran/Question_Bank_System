@@ -78,53 +78,53 @@ const StudentActivity = () => {
             </div>
 
             <div className="card">
-                <div className="table-responsive">
-                    <table className="data-table" style={{ borderCollapse: 'separate', borderSpacing: '0 10px', tableLayout: 'fixed', width: '100%' }}> {/* Spacing between rows */}
-                        <thead>
-                            <tr>
-                                <th style={{ width: '25%', textAlign: 'left', paddingLeft: '1rem' }}>Username</th>
-                                <th style={{ width: '50%', textAlign: 'left', paddingLeft: '1rem' }}>Email</th>
-                                <th style={{ width: '25%', textAlign: 'left', paddingLeft: '1rem' }}>Recent Activity Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredStudents.length > 0 ? (
-                                filteredStudents.map(student => (
-                                    <tr key={student._id}>
-                                        <td style={{ paddingLeft: '1rem' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500 }}>
-                                                {student.username || student.name || 'Unknown'}
-                                            </div>
-                                        </td>
-                                        <td style={{ paddingLeft: '1rem' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', maxWidth: '100%' }}>
-                                                <Mail size={16} style={{ flexShrink: 0 }} />
-                                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={student.email}>
-                                                    {student.email}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td style={{ paddingLeft: '1rem' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <Calendar size={16} className="text-muted" />
-                                                {formatStrict(student.lastLogin)}
-                                            </div>
-                                        </td>
+                {filteredStudents.length > 0 ? (
+                    <>
+                        <div className="table-responsive">
+                            <table className="data-table" style={{ borderCollapse: 'separate', borderSpacing: '0 10px', tableLayout: 'fixed', width: '100%' }}> {/* Spacing between rows */}
+                                <thead>
+                                    <tr>
+                                        <th style={{ width: '25%', textAlign: 'left', paddingLeft: '1rem' }}>Username</th>
+                                        <th style={{ width: '50%', textAlign: 'left', paddingLeft: '1rem' }}>Email</th>
+                                        <th style={{ width: '25%', textAlign: 'left', paddingLeft: '1rem' }}>Recent Activity Date</th>
                                     </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan="3" className="text-center" style={{ padding: '2rem' }}>
-                                        No students found matching your search.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-                <div style={{ padding: '1rem', borderTop: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                    Total Students: {filteredStudents.length}
-                </div>
+                                </thead>
+                                <tbody>
+                                    {filteredStudents.map(student => (
+                                        <tr key={student._id}>
+                                            <td style={{ paddingLeft: '1rem' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500 }}>
+                                                    {student.username || student.name || 'Unknown'}
+                                                </div>
+                                            </td>
+                                            <td style={{ paddingLeft: '1rem' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', maxWidth: '100%' }}>
+                                                    <Mail size={16} style={{ flexShrink: 0 }} />
+                                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={student.email}>
+                                                        {student.email}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td style={{ paddingLeft: '1rem' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <Calendar size={16} className="text-muted" />
+                                                    {formatStrict(student.lastLogin)}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style={{ padding: '1rem', borderTop: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                            Total Students: {filteredStudents.length}
+                        </div>
+                    </>
+                ) : (
+                    <div className="text-center p-5" style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
+                        No student found
+                    </div>
+                )}
             </div>
         </div>
     );
