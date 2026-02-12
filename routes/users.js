@@ -1,6 +1,24 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const Course = require('../models/Course');
+const Question = require('../models/Question');
+
+// Get ALL students (for Admin) - MOVED TO TOP to prevent masking
+router.get('/', async (req, res) => {
+    try {
+        console.log('GET /api/users hit'); // Debug log
+        // Fetch all users, sorted by most recent activity (lastLogin) desc
+        // Filter out users who have never logged in (old records without lastLogin)
+        const users = await User.find({ lastLogin: { $exists: true, $ne: null } })
+            .select('username email lastLogin createdAt name')
+            .sort({ lastLogin: -1 });
+        res.json(users);
+    } catch (err) {
+        console.error('Error fetching users:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
 
 // Register a course
 router.post('/:id/register-course', async (req, res) => {
@@ -17,24 +35,9 @@ router.post('/:id/register-course', async (req, res) => {
     }
 });
 
-// Get ALL students (for Admin)
-router.get('/', async (req, res) => {
-    try {
-        // Fetch all users, sorted by most recent activity (lastLogin) desc
-        // Filter out users who have never logged in (old records without lastLogin)
-        const users = await User.find({ lastLogin: { $exists: true, $ne: null } })
-            .select('username email lastLogin createdAt name')
-            .sort({ lastLogin: -1 });
-        res.json(users);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
 // Get registered courses with progress
 router.get('/:id/registered-courses', async (req, res) => {
     try {
-        const Question = require('../models/Question');
         const user = await User.findById(req.params.id).populate('registeredCourses').lean();
 
         if (!user) return res.status(404).json({ error: 'User not found' });
@@ -132,10 +135,6 @@ router.get('/:id/flagged-questions', async (req, res) => {
 // Get User Dashboard Data (All Courses with Progress)
 router.get('/:id/dashboard-data', async (req, res) => {
     try {
-        const User = require('../models/User');
-        const Course = require('../models/Course');
-        const Question = require('../models/Question');
-
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ error: 'User not found' });
 
