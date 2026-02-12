@@ -26,7 +26,7 @@ const StudentActivity = () => {
             }
         } catch (err) {
             console.error('Failed to load students:', err);
-            setError('Failed to load student activity data.');
+            setError(`Failed to load student activity data. (${err.message})`);
         } finally {
             setLoading(false);
         }
