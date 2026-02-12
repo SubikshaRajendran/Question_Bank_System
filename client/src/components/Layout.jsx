@@ -124,6 +124,7 @@ const Layout = () => {
                         <>
                             <li><Link to="/admin/dashboard" className={isActive('/admin/dashboard')} onClick={() => setShowMobileMenu(false)}>Dashboard</Link></li>
                             <li><Link to="/admin/comments" className={isActive('/admin/comments')} onClick={() => setShowMobileMenu(false)}>Student Comments</Link></li>
+                            <li><Link to="/admin/student-activity" className={isActive('/admin/student-activity')} onClick={() => setShowMobileMenu(false)}>Student Activity</Link></li>
                             <li><button onClick={handleLogout} className="nav-btn-logout">Logout</button></li>
                         </>
                     )}

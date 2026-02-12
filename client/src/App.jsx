@@ -19,6 +19,7 @@ import AdminDashboard from './pages/admin/Dashboard';
 import AddCourse from './pages/admin/AddCourse';
 import EditCourse from './pages/admin/EditCourse';
 import AdminComments from './pages/admin/AdminComments';
+import StudentActivity from './pages/admin/StudentActivity'; // Imported
 
 
 function App() {
@@ -48,6 +49,7 @@ function App() {
               <Route path="admin/course/new" element={<AddCourse />} />
               <Route path="admin/course/edit/:id" element={<EditCourse />} />
               <Route path="admin/comments" element={<AdminComments />} />
+              <Route path="admin/student-activity" element={<StudentActivity />} /> {/* Added Route */}
             </Route>
           </Route>
         </Routes>

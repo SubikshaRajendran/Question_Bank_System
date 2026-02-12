@@ -6,6 +6,7 @@ import { Eye, EyeOff } from 'lucide-react';
 
 const Login = ({ mode }) => {
     const [email, setEmail] = useState('');
+    const [username, setUsername] = useState(''); // Added username state
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -30,7 +31,7 @@ const Login = ({ mode }) => {
         try {
             const data = await fetchApi(endpoint, {
                 method: 'POST',
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ email, password, username }), // Sending username as well
             });
 
             if (data.success) {
@@ -56,6 +57,23 @@ const Login = ({ mode }) => {
                 <h2 style={{ textAlign: 'center', marginBottom: '1.5rem' }}>{title}</h2>
 
                 <form onSubmit={handleSubmit}>
+                    {/* Username field for Students - Moved to top */}
+                    {isStudent && (
+                        <div className="form-group">
+                            <label htmlFor="username">Username</label>
+                            <input
+                                type="text"
+                                id="username"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                required
+                                placeholder="Enter username"
+                                disabled={loading}
+                                autoComplete="username"
+                            />
+                        </div>
+                    )}
+
                     <div className="form-group">
                         <label htmlFor="email">Email</label>
                         <input
@@ -66,8 +84,11 @@ const Login = ({ mode }) => {
                             required
                             placeholder={`Enter ${role} email`}
                             disabled={loading}
+                            autoComplete="email"
                         />
                     </div>
+
+
 
                     <div className="form-group">
                         <label htmlFor="password">Password</label>
