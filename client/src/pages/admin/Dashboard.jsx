@@ -1,7 +1,61 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchApi } from '../../utils/api';
-import { Search, Plus, Trash2, Edit, BookOpen, Filter } from 'lucide-react';
+import { Search, Plus, Trash2, Edit, BookOpen, Filter, GripVertical } from 'lucide-react';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+const SortableCourseItem = ({ course }) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+    } = useSortable({ id: course._id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '1rem' // Add spacing between items
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} className="card">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div {...attributes} {...listeners} style={{ cursor: 'grab', color: 'var(--text-secondary)' }}>
+                    <GripVertical size={20} />
+                </div>
+                <div>
+                    <h3 style={{ margin: 0 }}>{course.title}</h3>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                        {course.questions ? course.questions.length : 0} Questions
+                    </p>
+                </div>
+            </div>
+            <Link to={`/admin/course/edit/${course._id}`} className="btn btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                <BookOpen size={16} /> View
+            </Link>
+        </div>
+    );
+};
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState({ totalCourses: 0, totalQuestions: 0, totalStudents: 0 });
@@ -13,6 +67,13 @@ const AdminDashboard = () => {
     const [departmentFilter, setDepartmentFilter] = useState('');
     const [page, setPage] = useState(1);
     const itemsPerPage = 5;
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
 
     useEffect(() => {
         loadData();
@@ -57,19 +118,58 @@ const AdminDashboard = () => {
         setPage(1);
     }, [searchTerm, difficultyFilter, departmentFilter, courses]);
 
-    const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this course? This action cannot be undone.')) return;
-        try {
-            await fetchApi(`/courses/${id}`, { method: 'DELETE' });
-            const newCourses = courses.filter(c => c._id !== id);
-            setCourses(newCourses);
-            // Stats might need refresh or simpler local update
-            setStats(prev => ({ ...prev, totalCourses: prev.totalCourses - 1 }));
-        } catch (err) {
-            console.error("Failed to delete course", err);
-            alert('Failed to delete course');
+    const handleDragEnd = async (event) => {
+        const { active, over } = event;
+
+        if (active.id !== over.id) {
+            setCourses((items) => {
+                const oldIndex = items.findIndex((item) => item._id === active.id);
+                const newIndex = items.findIndex((item) => item._id === over.id);
+                const newItems = arrayMove(items, oldIndex, newIndex);
+
+                // Update server (send all IDs in new order)
+                // Minimizing payload: send only { _id, order }
+                // Assign new order based on index
+                const updates = newItems.map((item, index) => ({
+                    _id: item._id,
+                    order: index
+                }));
+
+                // Optimistic update is already done via setCourses(newItems)
+                // But we need to sync with API
+                fetchApi('/courses/reorder', {
+                    method: 'PUT',
+                    body: JSON.stringify({ order: updates })
+                }).catch(err => {
+                    console.error("Failed to reorder", err);
+                    // Revert on error? For now, just alert or log
+                    alert("Failed to save new order");
+                    loadData(); // Reload to revert
+                });
+
+                return newItems;
+            });
         }
     };
+
+    const isDragEnabled = !searchTerm && !difficultyFilter && !departmentFilter;
+
+    // Pagination
+    // Note: Reordering usually works best when viewing all items.
+    // If pagination is active, we validly can only reorder within the current page 
+    // IF we update the global list. 
+    // But `handleDragEnd` finds index in `courses` (all items). 
+    // `DndContext` needs `displayedCourses` IDs if we wrap only them.
+    // If we only show 5, and drag one, `arrayMove` on `courses` needs correct indices.
+
+    // Actually, to keep it simple and correct:
+    // We will render `SortableContext` with `displayedCourses`.
+    // When drag ends, we find the items in `courses`.
+    // Wait, if I move item 1 to item 2 on page 1.
+    // oldIndex in `courses` might be 0, newIndex 1.
+    // If I'm on page 2. displayedCourses indices are 5-9.
+    // logic in handleDragEnd uses `items.findIndex`. `items` is `courses`.
+    // So as long as `active.id` and `over.id` are in `courses`, it works!
 
     const totalPages = Math.ceil(filteredCourses.length / itemsPerPage);
     const displayedCourses = filteredCourses.slice((page - 1) * itemsPerPage, page * itemsPerPage);
@@ -86,10 +186,6 @@ const AdminDashboard = () => {
                     <div className="stat-number" style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>{stats.totalCourses}</div>
                     <div className="stat-label" style={{ color: 'var(--text-secondary)' }}>Total Courses</div>
                 </div>
-                {/* Only Courses stat was shown in HTML, but let's stick to what was there or what API provides. 
-            HTML shows only one stat card. API provides others? 
-            The HTML only had one stat-card for 'Total Courses'.
-        */}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -99,7 +195,6 @@ const AdminDashboard = () => {
                 </Link>
             </div>
 
-            {/* Search */}
             {/* Filters Bar */}
             <div className="filters-bar" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
                 <div style={{ position: 'relative', flexGrow: 1, minWidth: '200px' }}>
@@ -147,19 +242,41 @@ const AdminDashboard = () => {
                 {displayedCourses.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>No courses found.</div>
                 ) : (
-                    displayedCourses.map(course => (
-                        <div key={course._id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                                <h3 style={{ margin: 0 }}>{course.title}</h3>
-                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                                    {course.questions ? course.questions.length : 0} Questions
-                                </p>
+                    isDragEnabled ? (
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <SortableContext
+                                items={courses.map(c => c._id)} // Must pass all items or just displayed?
+                                // If I pass displayedCourses.map(c => c._id), then I can only sort within them.
+                                // But `courses` state has all. 
+                                // `items` prop in SortableContext should match the identifiers of the Draggables.
+                                // If I only render 5, I should only pass 5 to SortableContext.
+                                items={displayedCourses.map(c => c._id)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                {displayedCourses.map((course) => (
+                                    <SortableCourseItem key={course._id} course={course} />
+                                ))}
+                            </SortableContext>
+                        </DndContext>
+                    ) : (
+                        displayedCourses.map(course => (
+                            <div key={course._id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                <div>
+                                    <h3 style={{ margin: 0 }}>{course.title}</h3>
+                                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                        {course.questions ? course.questions.length : 0} Questions
+                                    </p>
+                                </div>
+                                <Link to={`/admin/course/edit/${course._id}`} className="btn btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                                    <BookOpen size={16} /> View
+                                </Link>
                             </div>
-                            <Link to={`/admin/course/edit/${course._id}`} className="btn btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                                <BookOpen size={16} /> View
-                            </Link>
-                        </div>
-                    ))
+                        ))
+                    )
                 )}
             </div>
 

@@ -11,7 +11,8 @@ const CourseSchema = new mongoose.Schema({
     },
     tags: [{ type: String }],
     image: { type: String }, // URL or path to image
-    questions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }]
+    questions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }],
+    order: { type: Number, default: 0 } // For custom ordering
 }, { timestamps: true });
 
 module.exports = mongoose.model('Course', CourseSchema);

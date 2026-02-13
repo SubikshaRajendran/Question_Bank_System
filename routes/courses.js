@@ -77,7 +77,7 @@ router.get('/', async (req, res) => {
             query.tags = { $in: tagList };
         }
 
-        const courses = await Course.find(query);
+        const courses = await Course.find(query).sort({ order: 1 });
         res.json(courses);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -102,6 +102,20 @@ router.post('/', upload.single('image'), async (req, res) => {
     } catch (err) {
         console.error("Upload Error:", err);
         res.status(400).json({ error: err.message });
+    }
+});
+
+// Reorder courses
+router.put('/reorder', async (req, res) => {
+    const { order } = req.body; // Array of { _id, order }
+    try {
+        const updatePromises = order.map(item =>
+            Course.findByIdAndUpdate(item._id, { order: item.order })
+        );
+        await Promise.all(updatePromises);
+        res.json({ message: 'Courses reordered successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -248,5 +262,7 @@ router.put('/questions/move', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+
 
 module.exports = router;
