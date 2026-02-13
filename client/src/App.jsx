@@ -14,13 +14,14 @@ import MyCourses from './pages/student/MyCourses';
 import ReviewLater from './pages/student/ReviewLater';
 import CourseView from './pages/student/CourseView';
 import StudentComments from './pages/student/StudentComments';
+import StudentProfile from './pages/student/Profile'; // Imported
 
 import AdminDashboard from './pages/admin/Dashboard';
 import AddCourse from './pages/admin/AddCourse';
 import EditCourse from './pages/admin/EditCourse';
 import AdminComments from './pages/admin/AdminComments';
-import StudentActivity from './pages/admin/StudentActivity'; // Imported
-
+import StudentActivity from './pages/admin/StudentActivity';
+import AdminProfile from './pages/admin/Profile'; // Imported
 
 function App() {
   return (
@@ -40,16 +41,18 @@ function App() {
               <Route path="student/courses" element={<MyCourses />} />
               <Route path="student/review" element={<ReviewLater />} />
               <Route path="student/comments" element={<StudentComments />} />
+              <Route path="student/profile" element={<StudentProfile />} /> {/* Added Route */}
               <Route path="course/:id" element={<CourseView />} />
             </Route>
 
             {/* Admin Routes */}
             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
               <Route path="admin/dashboard" element={<AdminDashboard />} />
+              <Route path="admin/profile" element={<AdminProfile />} /> {/* Added Route */}
               <Route path="admin/course/new" element={<AddCourse />} />
               <Route path="admin/course/edit/:id" element={<EditCourse />} />
               <Route path="admin/comments" element={<AdminComments />} />
-              <Route path="admin/student-activity" element={<StudentActivity />} /> {/* Added Route */}
+              <Route path="admin/student-activity" element={<StudentActivity />} />
             </Route>
           </Route>
         </Routes>

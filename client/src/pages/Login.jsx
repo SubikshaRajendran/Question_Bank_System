@@ -57,8 +57,12 @@ const Login = ({ mode }) => {
                 <h2 style={{ textAlign: 'center', marginBottom: '1.5rem' }}>{title}</h2>
 
                 <form onSubmit={handleSubmit}>
-                    {/* Username field for Students - Moved to top */}
-                    {isStudent && (
+                    {/* Username field - Show for Admin AND Student (if Student needs it) */}
+                    {/* Actually, user said "instead of email ask for username" for Admin. 
+                        Student might still need Email.
+                        Let's show Username for both, but required for Admin. 
+                    */}
+                    {(isStudent || !isStudent) && (
                         <div className="form-group">
                             <label htmlFor="username">Username</label>
                             <input
@@ -66,7 +70,7 @@ const Login = ({ mode }) => {
                                 id="username"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                required
+                                required={!isStudent} // Required for Admin
                                 placeholder="Enter username"
                                 disabled={loading}
                                 autoComplete="username"
@@ -74,21 +78,22 @@ const Login = ({ mode }) => {
                         </div>
                     )}
 
-                    <div className="form-group">
-                        <label htmlFor="email">Email</label>
-                        <input
-                            type="email"
-                            id="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            placeholder={`Enter ${role} email`}
-                            disabled={loading}
-                            autoComplete="email"
-                        />
-                    </div>
-
-
+                    {/* Email field - Hide for Admin */}
+                    {isStudent && (
+                        <div className="form-group">
+                            <label htmlFor="email">Email</label>
+                            <input
+                                type="email"
+                                id="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                placeholder="Enter student email"
+                                disabled={loading}
+                                autoComplete="email"
+                            />
+                        </div>
+                    )}
 
                     <div className="form-group">
                         <label htmlFor="password">Password</label>

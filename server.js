@@ -1,6 +1,9 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
+const User = require('./models/User'); // Import User model
+const bcrypt = require('bcryptjs'); // Import bcryptjs
+
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
@@ -24,15 +27,36 @@ app.use((err, req, res, next) => {
 });
 
 // MongoDB Connection
-// Note: In a real app, use environment variables. 
-// For this demo, assuming local or provided connection string.
-// The user asked for MongoDB, usually locally it's mongodb://localhost:27017/qb_system
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/qb_system';
 mongoose.connect(MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
-}).then(() => console.log('MongoDB Connected'))
+}).then(async () => {
+    console.log('MongoDB Connected');
+    await seedAdmin(); // Seed admin on startup
+})
     .catch(err => console.log(err));
+
+// Seed Admin Function
+const seedAdmin = async () => {
+    try {
+        const adminExists = await User.findOne({ role: 'admin' });
+        if (!adminExists) {
+            const hashedPassword = await bcrypt.hash('bitqb', 10);
+            const admin = new User({
+                name: 'Admin',
+                username: 'adminbitqbs',
+                email: 'admin@bitqb.com',
+                password: hashedPassword,
+                role: 'admin'
+            });
+            await admin.save();
+            console.log('Default Admin Account Created');
+        }
+    } catch (err) {
+        console.error('Failed to seed admin:', err);
+    }
+};
 
 // Routes Placeholders
 app.use('/api/auth', require('./routes/auth'));

@@ -4,6 +4,11 @@ const UserSchema = new mongoose.Schema({
     name: { type: String, required: true },
     username: { type: String, unique: true, sparse: true }, // Added username
     email: { type: String, required: true, unique: true },
+    role: { type: String, enum: ['student', 'admin'], default: 'student' },
+    fullName: { type: String }, // For Student Profile
+    department: { type: String },
+    phoneNumber: { type: String },
+    profilePicture: { type: String }, // URL to uploaded image
     password: { type: String, required: true },
     lastLogin: { type: Date }, // Added lastLogin
     completedCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],

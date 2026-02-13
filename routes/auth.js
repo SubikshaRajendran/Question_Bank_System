@@ -2,22 +2,86 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 
-// Admin Login
-router.post('/admin/login', (req, res) => {
-    let { email, password } = req.body;
+const bcrypt = require('bcryptjs');
 
-    if (!email || !password) {
-        return res.status(400).json({ success: false, message: 'Email and password required' });
+// Admin Login
+router.post('/admin/login', async (req, res) => {
+    let { username, password } = req.body;
+    console.log('Admin Login Attempt:', { username, password }); // Log input
+
+    if (!username || !password) {
+        return res.status(400).json({ success: false, message: 'Username and password required' });
     }
 
-    email = email.trim().toLowerCase();
+    username = username.trim();
     password = password.trim();
+    console.log('Trimmed:', { username, password });
 
-    // Exact match check
-    if (email === 'adminbit@gmail.com' && password === 'bitqb') {
-        res.json({ success: true, role: 'admin' });
-    } else {
-        res.status(401).json({ success: false, message: 'Invalid Admin Credentials' });
+    try {
+        const user = await User.findOne({ username, role: 'admin' });
+        console.log('DB User Found:', user ? { id: user._id, username: user.username, role: user.role } : 'Not Found');
+
+        if (!user) {
+            // Debug: check if user exists without role check
+            const userNoRole = await User.findOne({ username });
+            console.log('User without role check:', userNoRole ? { id: userNoRole._id, role: userNoRole.role } : 'Not Found');
+            return res.status(401).json({ success: false, message: 'Invalid Admin Username' });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        console.log('Password Match:', isMatch);
+
+        if (!isMatch) {
+            return res.status(401).json({ success: false, message: 'Invalid Password' });
+        }
+
+        res.json({ success: true, role: 'admin', user: { username: user.username, role: 'admin' } });
+    } catch (err) {
+        console.error("Admin Login Error", err);
+        res.status(500).json({ success: false, message: "Server Error" });
+    }
+});
+
+// Verify Admin Password
+router.post('/admin/verify-password', async (req, res) => {
+    let { username, password } = req.body;
+    try {
+        const user = await User.findOne({ username, role: 'admin' });
+        if (!user) return res.status(404).json({ success: false, message: "Admin not found" });
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (isMatch) {
+            res.json({ success: true });
+        } else {
+            res.status(401).json({ success: false, message: "Incorrect password" });
+        }
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Update Admin Profile
+router.put('/admin/update-profile', async (req, res) => {
+    let { currentUsername, newUsername, newPassword } = req.body;
+
+    try {
+        const user = await User.findOne({ username: currentUsername, role: 'admin' });
+        if (!user) return res.status(404).json({ success: false, message: "Admin not found" });
+
+        if (newUsername && newUsername !== currentUsername) {
+            const exists = await User.findOne({ username: newUsername });
+            if (exists) return res.status(400).json({ success: false, message: "Username already taken" });
+            user.username = newUsername;
+        }
+
+        if (newPassword) {
+            user.password = await bcrypt.hash(newPassword, 10);
+        }
+
+        await user.save();
+        res.json({ success: true, username: user.username });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
     }
 });
 

@@ -3,6 +3,37 @@ const router = express.Router();
 const User = require('../models/User');
 const Course = require('../models/Course');
 const Question = require('../models/Question');
+const bcrypt = require('bcryptjs');
+const multer = require('multer');
+const streamifier = require('streamifier');
+const cloudinary = require('cloudinary').v2;
+
+// Configure Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dqi4crgop',
+    api_key: process.env.CLOUDINARY_API_KEY || '862391676162651',
+    api_secret: process.env.CLOUDINARY_API_SECRET || 'fMg_2vRP_5NCLTeLuM56SxSjuUQ'
+});
+
+// Configure Multer (Memory Storage)
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
+const streamUpload = (req) => {
+    return new Promise((resolve, reject) => {
+        let stream = cloudinary.uploader.upload_stream(
+            { folder: 'qb_profiles' },
+            (error, result) => {
+                if (result) {
+                    resolve(result);
+                } else {
+                    reject(error);
+                }
+            }
+        );
+        streamifier.createReadStream(req.file.buffer).pipe(stream);
+    });
+};
 
 // Get ALL students (for Admin) - MOVED TO TOP to prevent masking
 router.get('/', async (req, res) => {
@@ -178,5 +209,68 @@ router.get('/:id/dashboard-data', async (req, res) => {
     }
 });
 
+
+// Verify Password
+router.post('/:id/verify-password', async (req, res) => {
+    try {
+        const { password } = req.body;
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (isMatch) {
+            res.json({ success: true });
+        } else {
+            res.status(401).json({ success: false, message: "Incorrect password" });
+        }
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Update Profile (with image upload)
+router.put('/:id/profile', upload.single('profilePicture'), async (req, res) => {
+    try {
+        const { username, newPassword, fullName, department, phoneNumber } = req.body;
+        const user = await User.findById(req.params.id);
+
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // Update Username (check uniqueness if changed)
+        if (username && username !== user.username) {
+            const exists = await User.findOne({ username });
+            if (exists) return res.status(400).json({ message: 'Username already taken' });
+            user.username = username;
+        }
+
+        // Update Password
+        if (newPassword) {
+            user.password = await bcrypt.hash(newPassword, 10);
+        }
+
+        // Update Details
+        if (fullName) user.fullName = fullName;
+        if (department) user.department = department;
+        if (phoneNumber) user.phoneNumber = phoneNumber;
+
+        // Handle Image Upload
+        if (req.file) {
+            const result = await streamUpload(req);
+            user.profilePicture = result.secure_url;
+        }
+
+        await user.save();
+
+        // Return updated user object (excluding password)
+        const userObj = user.toObject();
+        delete userObj.password;
+
+        res.json({ success: true, user: userObj });
+
+    } catch (err) {
+        console.error("Profile Update Error:", err);
+        res.status(500).json({ message: err.message });
+    }
+});
 
 module.exports = router;

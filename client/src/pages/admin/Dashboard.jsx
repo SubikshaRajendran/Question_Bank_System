@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchApi } from '../../utils/api';
-import { Search, Plus, Trash2, Edit, BookOpen, Filter, GripVertical } from 'lucide-react';
+import { Search, Plus, Trash2, Edit, BookOpen, Filter, GripVertical, Save, X, ArrowUpDown, User } from 'lucide-react'; // Added User icon
+import Toast from '../../components/Toast';
 import {
     DndContext,
     closestCenter,
@@ -34,7 +35,10 @@ const SortableCourseItem = ({ course }) => {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: '1rem' // Add spacing between items
+        marginBottom: '1rem',
+        background: 'var(--card-bg)', // Ensure background is set for better drag visual
+        zIndex: transform ? 999 : 'auto', // Lift up when dragging
+        position: 'relative'
     };
 
     return (
@@ -66,6 +70,9 @@ const AdminDashboard = () => {
     const [difficultyFilter, setDifficultyFilter] = useState('');
     const [departmentFilter, setDepartmentFilter] = useState('');
     const [page, setPage] = useState(1);
+    const [isReorderMode, setIsReorderMode] = useState(false); // New state for Reorder Mode
+    const [toast, setToast] = useState(null); // Toast state
+
     const itemsPerPage = 5;
 
     const sensors = useSensors(
@@ -90,6 +97,7 @@ const AdminDashboard = () => {
             setFilteredCourses(coursesData);
         } catch (err) {
             console.error("Failed to load admin data", err);
+            setToast({ message: 'Failed to load data', type: 'error' });
         } finally {
             setLoading(false);
         }
@@ -115,70 +123,80 @@ const AdminDashboard = () => {
         }
 
         setFilteredCourses(result);
-        setPage(1);
-    }, [searchTerm, difficultyFilter, departmentFilter, courses]);
+        if (!isReorderMode) {
+            setPage(1);
+        }
+    }, [searchTerm, difficultyFilter, departmentFilter, courses, isReorderMode]);
 
-    const handleDragEnd = async (event) => {
+    const handleDragEnd = (event) => {
         const { active, over } = event;
 
         if (active.id !== over.id) {
             setCourses((items) => {
                 const oldIndex = items.findIndex((item) => item._id === active.id);
                 const newIndex = items.findIndex((item) => item._id === over.id);
-                const newItems = arrayMove(items, oldIndex, newIndex);
-
-                // Update server (send all IDs in new order)
-                // Minimizing payload: send only { _id, order }
-                // Assign new order based on index
-                const updates = newItems.map((item, index) => ({
-                    _id: item._id,
-                    order: index
-                }));
-
-                // Optimistic update is already done via setCourses(newItems)
-                // But we need to sync with API
-                fetchApi('/courses/reorder', {
-                    method: 'PUT',
-                    body: JSON.stringify({ order: updates })
-                }).catch(err => {
-                    console.error("Failed to reorder", err);
-                    // Revert on error? For now, just alert or log
-                    alert("Failed to save new order");
-                    loadData(); // Reload to revert
-                });
-
-                return newItems;
+                return arrayMove(items, oldIndex, newIndex);
             });
         }
     };
 
-    const isDragEnabled = !searchTerm && !difficultyFilter && !departmentFilter;
+    const toggleReorderMode = () => {
+        if (!isReorderMode) {
+            // Turning ON
+            setSearchTerm('');
+            setDifficultyFilter('');
+            setDepartmentFilter('');
+            setIsReorderMode(true);
+            setFilteredCourses(courses); // Reset filters to show all
+        } else {
+            // Turning OFF (Cancel)
+            setIsReorderMode(false);
+            loadData(); // Revert changes by reloading
+        }
+    };
 
-    // Pagination
-    // Note: Reordering usually works best when viewing all items.
-    // If pagination is active, we validly can only reorder within the current page 
-    // IF we update the global list. 
-    // But `handleDragEnd` finds index in `courses` (all items). 
-    // `DndContext` needs `displayedCourses` IDs if we wrap only them.
-    // If we only show 5, and drag one, `arrayMove` on `courses` needs correct indices.
+    const saveOrder = async () => {
+        const updates = courses.map((item, index) => ({
+            _id: item._id,
+            order: index
+        }));
 
-    // Actually, to keep it simple and correct:
-    // We will render `SortableContext` with `displayedCourses`.
-    // When drag ends, we find the items in `courses`.
-    // Wait, if I move item 1 to item 2 on page 1.
-    // oldIndex in `courses` might be 0, newIndex 1.
-    // If I'm on page 2. displayedCourses indices are 5-9.
-    // logic in handleDragEnd uses `items.findIndex`. `items` is `courses`.
-    // So as long as `active.id` and `over.id` are in `courses`, it works!
+        try {
+            await fetchApi('/courses/reorder', {
+                method: 'PUT',
+                body: JSON.stringify({ order: updates })
+            });
+            setToast({ message: 'Course order saved successfully!', type: 'success' }); // Use Toast
+            setIsReorderMode(false);
+        } catch (err) {
+            console.error("Failed to save order", err);
+            setToast({ message: "Failed to save new order", type: 'error' });
+        }
+    };
 
     const totalPages = Math.ceil(filteredCourses.length / itemsPerPage);
-    const displayedCourses = filteredCourses.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+    const displayedCourses = isReorderMode ? courses : filteredCourses.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
     if (loading) return <div className="container">Loading Dashboard...</div>;
 
     return (
         <div className="container">
-            <h2 className="section-header">Admin Overview</h2>
+            {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    {/* Profile Icon Linked to Profile Page */}
+                    <Link
+                        to="/admin/profile"
+                        className="btn btn-secondary"
+                        style={{ padding: '0.5rem', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-color)' }}
+                        title="Profile Settings"
+                    >
+                        <User size={20} />
+                    </Link>
+                    <h2 className="section-header" style={{ marginBottom: 0 }}>Admin Overview</h2>
+                </div>
+            </div>
 
             {/* Stats */}
             <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem', maxWidth: '300px', margin: '0 auto 2rem auto' }}>
@@ -190,74 +208,101 @@ const AdminDashboard = () => {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h2 className="section-header" style={{ marginBottom: 0 }}>Manage Courses</h2>
-                <Link to="/admin/course/new" className="btn" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Plus size={18} /> Add Course
-                </Link>
-            </div>
-
-            {/* Filters Bar */}
-            <div className="filters-bar" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-                <div style={{ position: 'relative', flexGrow: 1, minWidth: '200px' }}>
-                    <Search size={22} style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                    <input
-                        type="text"
-                        placeholder="Search courses..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{ paddingLeft: '3rem', padding: '0.8rem 1rem 0.8rem 3rem', fontSize: '1rem', width: '100%', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}
-                    />
-                </div>
-
-                <div style={{ position: 'relative', minWidth: '180px' }}>
-                    <Filter size={20} style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-secondary)' }} />
-                    <select
-                        value={difficultyFilter}
-                        onChange={(e) => setDifficultyFilter(e.target.value)}
-                        style={{ appearance: 'none', padding: '0.8rem', fontSize: '1rem', width: '100%', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-color)' }}
-                    >
-                        <option value="">All Levels</option>
-                        <option value="Easy">Easy</option>
-                        <option value="Medium">Medium</option>
-                        <option value="Hard">Hard</option>
-                    </select>
-                </div>
-
-                <div style={{ position: 'relative', minWidth: '180px' }}>
-                    <Filter size={20} style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-secondary)' }} />
-                    <select
-                        value={departmentFilter}
-                        onChange={(e) => setDepartmentFilter(e.target.value)}
-                        style={{ appearance: 'none', padding: '0.8rem', fontSize: '1rem', width: '100%', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-color)' }}
-                    >
-                        <option value="">All Departments</option>
-                        <option value="CS Cluster">CS Cluster</option>
-                        <option value="Core">Core</option>
-                        <option value="General/Common">General/Common</option>
-                    </select>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                    {!isReorderMode ? (
+                        <>
+                            <button
+                                onClick={toggleReorderMode}
+                                className="btn btn-secondary"
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                            >
+                                <ArrowUpDown size={18} /> Reorder
+                            </button>
+                            <Link to="/admin/course/new" className="btn" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Plus size={18} /> Add Course
+                            </Link>
+                        </>
+                    ) : (
+                        <>
+                            <button
+                                onClick={saveOrder}
+                                className="btn btn-success"
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#10b981', color: 'white' }}
+                            >
+                                <Save size={18} /> Save Order
+                            </button>
+                            <button
+                                onClick={toggleReorderMode}
+                                className="btn btn-danger"
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#ef4444', color: 'white' }}
+                            >
+                                <X size={18} /> Cancel
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
+
+            {/* Filters Bar - Hide in Reorder Mode */}
+            {!isReorderMode && (
+                <div className="filters-bar" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                    <div style={{ position: 'relative', flexGrow: 1, minWidth: '200px' }}>
+                        <Search size={22} style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                        <input
+                            type="text"
+                            placeholder="Search courses..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{ paddingLeft: '3rem', padding: '0.8rem 1rem 0.8rem 3rem', fontSize: '1rem', width: '100%', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}
+                        />
+                    </div>
+
+                    <div style={{ position: 'relative', minWidth: '180px' }}>
+                        <Filter size={20} style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-secondary)' }} />
+                        <select
+                            value={difficultyFilter}
+                            onChange={(e) => setDifficultyFilter(e.target.value)}
+                            style={{ appearance: 'none', padding: '0.8rem', fontSize: '1rem', width: '100%', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-color)' }}
+                        >
+                            <option value="">All Levels</option>
+                            <option value="Easy">Easy</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Hard">Hard</option>
+                        </select>
+                    </div>
+
+                    <div style={{ position: 'relative', minWidth: '180px' }}>
+                        <Filter size={20} style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-secondary)' }} />
+                        <select
+                            value={departmentFilter}
+                            onChange={(e) => setDepartmentFilter(e.target.value)}
+                            style={{ appearance: 'none', padding: '0.8rem', fontSize: '1rem', width: '100%', borderRadius: '0.5rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-color)' }}
+                        >
+                            <option value="">All Departments</option>
+                            <option value="CS Cluster">CS Cluster</option>
+                            <option value="Core">Core</option>
+                            <option value="General/Common">General/Common</option>
+                        </select>
+                    </div>
+                </div>
+            )}
 
             {/* Course List */}
             <div>
                 {displayedCourses.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>No courses found.</div>
                 ) : (
-                    isDragEnabled ? (
+                    isReorderMode ? (
                         <DndContext
                             sensors={sensors}
                             collisionDetection={closestCenter}
                             onDragEnd={handleDragEnd}
                         >
                             <SortableContext
-                                items={courses.map(c => c._id)} // Must pass all items or just displayed?
-                                // If I pass displayedCourses.map(c => c._id), then I can only sort within them.
-                                // But `courses` state has all. 
-                                // `items` prop in SortableContext should match the identifiers of the Draggables.
-                                // If I only render 5, I should only pass 5 to SortableContext.
-                                items={displayedCourses.map(c => c._id)}
+                                items={courses.map(c => c._id)}
                                 strategy={verticalListSortingStrategy}
                             >
-                                {displayedCourses.map((course) => (
+                                {courses.map((course) => (
                                     <SortableCourseItem key={course._id} course={course} />
                                 ))}
                             </SortableContext>
@@ -280,8 +325,8 @@ const AdminDashboard = () => {
                 )}
             </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
+            {/* Pagination - Hide in Reorder Mode */}
+            {!isReorderMode && totalPages > 1 && (
                 <div className="pagination-controls" style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '2rem', alignItems: 'center' }}>
                     <button
                         className="page-btn"
