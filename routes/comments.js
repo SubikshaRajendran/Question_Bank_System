@@ -6,7 +6,20 @@ const Comment = require('../models/Comment');
 router.post('/', async (req, res) => {
     try {
         const { userId, questionId, courseId, text } = req.body;
-        const comment = new Comment({ userId, questionId, courseId, text });
+
+        let type = 'question';
+        if (!questionId && !courseId) {
+            type = 'general';
+        }
+
+        const comment = new Comment({
+            userId,
+            questionId: questionId || undefined,
+            courseId: courseId || undefined,
+            text,
+            type
+        });
+
         await comment.save();
         res.status(201).json(comment);
     } catch (err) {
@@ -51,6 +64,16 @@ router.put('/:id/reply', async (req, res) => {
             { new: true }
         );
         res.json(comment);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete a comment (Admin)
+router.delete('/:id', async (req, res) => {
+    try {
+        await Comment.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Comment deleted' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

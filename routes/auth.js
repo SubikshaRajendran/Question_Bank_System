@@ -115,7 +115,7 @@ router.post('/student/login', async (req, res) => {
             if (password !== defaultPass) {
                 return res.status(401).json({
                     success: false,
-                    message: `New users must log in with the default password (first 4 letters of your email, e.g., '${defaultPass}')`
+                    message: 'Invalid Login Credentials'
                 });
             }
 
