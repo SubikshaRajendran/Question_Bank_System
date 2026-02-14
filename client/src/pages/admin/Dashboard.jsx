@@ -183,7 +183,7 @@ const AdminDashboard = () => {
         <div className="container">
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     {/* Profile Icon Linked to Profile Page */}
                     <Link
@@ -199,10 +199,10 @@ const AdminDashboard = () => {
             </div>
 
             {/* Stats */}
-            <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem', maxWidth: '300px', margin: '0 auto 2rem auto' }}>
-                <div className="stat-card" style={{ background: 'var(--card-bg)', padding: '1.5rem', borderRadius: '1rem', boxShadow: 'var(--card-shadow)', textAlign: 'center' }}>
-                    <div className="stat-number" style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>{stats.totalCourses}</div>
-                    <div className="stat-label" style={{ color: 'var(--text-secondary)' }}>Total Courses</div>
+            <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem', maxWidth: '220px', margin: '0 auto 1.5rem auto' }}>
+                <div className="stat-card" style={{ background: 'var(--card-bg)', padding: '1rem', borderRadius: '0.75rem', boxShadow: 'var(--card-shadow)', textAlign: 'center' }}>
+                    <div className="stat-number" style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>{stats.totalCourses}</div>
+                    <div className="stat-label" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Total Courses</div>
                 </div>
             </div>
 

@@ -35,7 +35,8 @@ const About = () => {
                 About Us
             </motion.h2>
 
-            <div className="about-grid">
+            {/* Top Section: Story and Image */}
+            <div className="about-grid" style={{ marginBottom: '2rem', padding: '2rem' }}>
                 <motion.div
                     className="about-content"
                     variants={containerVariants}
@@ -44,28 +45,10 @@ const About = () => {
                 >
                     <motion.div variants={itemVariants}>
                         <h3>The Story</h3>
-                        <p style={{ marginBottom: '1.5rem' }}>
-                            The Question Bank System was born from a simple idea: education should be accessible, organized, and
-                            efficient.
-                            We recognized that students needed a reliable way to practice, and educators needed a seamless tool
-                            to manage curriculum.
-                            What started as a small project has grown into a comprehensive platform serving the academic
-                            community.
+                        <p style={{ marginBottom: '1rem' }}>
+                            The Question Bank System was created with a simple goal — to help students evaluate and strengthen their understanding of academic subjects independently. Many students prepare for exams without knowing their actual level of understanding in a specific course. This platform was designed to provide structured question sets across different subjects, allowing students to test themselves, identify knowledge gaps, and improve confidently. What started as a student-focused academic tool has evolved into a centralized self-assessment platform for effective learning.
                         </p>
                     </motion.div>
-
-                    <div className="mission-vision-grid">
-                        <motion.div className="mv-card" variants={itemVariants}>
-                            <h4>Our Mission</h4>
-                            <p style={{ fontSize: '0.9rem' }}>To streamline the assessment process and provide students with the
-                                high-quality resources they need to excel.</p>
-                        </motion.div>
-                        <motion.div className="mv-card" variants={itemVariants}>
-                            <h4>Our Vision</h4>
-                            <p style={{ fontSize: '0.9rem' }}>A world where every student has immediate access to the tools that
-                                help them unlock their full potential.</p>
-                        </motion.div>
-                    </div>
                 </motion.div>
 
                 <div className="about-image">
@@ -98,6 +81,20 @@ const About = () => {
                     </svg>
                 </div>
             </div>
+
+            {/* Middle Section: Mission and Vision */}
+            <div className="mission-vision-grid" style={{ marginTop: '0', marginBottom: '3rem' }}>
+                <motion.div className="mv-card" variants={itemVariants} initial="hidden" animate="visible">
+                    <h4>Our Mission</h4>
+                    <p style={{ fontSize: '0.9rem' }}>Our mission is to empower students with a simple, organized, and accessible platform that enables self-assessment across various academic courses. We aim to make exam preparation more structured by providing quality question banks that help students track their understanding and improve continuously.</p>
+                </motion.div>
+                <motion.div className="mv-card" variants={itemVariants} initial="hidden" animate="visible">
+                    <h4>Our Vision</h4>
+                    <p style={{ fontSize: '0.9rem' }}>Our vision is to create a reliable academic self-evaluation ecosystem where students can independently assess their knowledge, build confidence, and enhance their academic performance through consistent practice and feedback-driven learning.</p>
+                </motion.div>
+            </div>
+
+            <div style={{ margin: '4rem 0 2rem', opacity: 0.1, borderTop: '1px solid var(--text-color)' }}></div>
 
             <div className="card" style={{ textAlign: 'center', maxWidth: '600px', margin: '0 auto' }}>
                 <h3>Get in Touch</h3>

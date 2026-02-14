@@ -43,7 +43,7 @@ const Layout = () => {
     const isActive = (path) => location.pathname === path ? 'active' : '';
 
     return (
-        <>
+        <div className="layout-wrapper">
             <nav className="navbar">
                 <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <img src={logo} alt="Logo" style={{ height: '52px', width: 'auto' }} />
@@ -115,7 +115,12 @@ const Layout = () => {
                             <li><Link to="/student/courses" className={isActive('/student/courses')} onClick={() => setShowMobileMenu(false)}>My Courses</Link></li>
                             <li><Link to="/student/review" className={isActive('/student/review')} onClick={() => setShowMobileMenu(false)}>Review Later</Link></li>
                             <li><Link to="/student/comments" className={isActive('/student/comments')} onClick={() => setShowMobileMenu(false)}>My Comments</Link></li>
-                            <li><button onClick={handleLogout} className="nav-btn-logout">Logout</button></li>
+                            <li>
+                                <button onClick={handleLogout} className="nav-btn-logout">
+                                    <LogOut size={18} />
+                                    <span>Logout</span>
+                                </button>
+                            </li>
                         </>
                     )}
 
@@ -125,7 +130,12 @@ const Layout = () => {
                             <li><Link to="/admin/dashboard" className={isActive('/admin/dashboard')} onClick={() => setShowMobileMenu(false)}>Dashboard</Link></li>
                             <li><Link to="/admin/comments" className={isActive('/admin/comments')} onClick={() => setShowMobileMenu(false)}>Student Comments</Link></li>
                             <li><Link to="/admin/student-activity" className={isActive('/admin/student-activity')} onClick={() => setShowMobileMenu(false)}>Student Activity</Link></li>
-                            <li><button onClick={handleLogout} className="nav-btn-logout">Logout</button></li>
+                            <li>
+                                <button onClick={handleLogout} className="nav-btn-logout">
+                                    <LogOut size={18} />
+                                    <span>Logout</span>
+                                </button>
+                            </li>
                         </>
                     )}
                     {/* Theme Toggle in Nav */}
@@ -142,14 +152,14 @@ const Layout = () => {
                 </ul>
             </nav>
 
-            <div className="container">
+            <div className="container main-content">
                 <Outlet />
             </div>
 
             <footer className="main-footer" style={{ textAlign: 'center' }}>
                 <p>&copy; 2026 Question Bank System. All rights reserved.</p>
             </footer>
-        </>
+        </div>
     );
 };
 
