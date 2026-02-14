@@ -28,6 +28,15 @@ const Login = ({ mode }) => {
         setLoading(true);
         setShake(false);
 
+        // Domain Validation for Students
+        if (isStudent && !email.endsWith('@bitsathy.ac.in')) {
+            setError('Only @bitsathy.ac.in emails are allowed');
+            setShake(true);
+            setTimeout(() => setShake(false), 500);
+            setLoading(false);
+            return;
+        }
+
         try {
             const data = await fetchApi(endpoint, {
                 method: 'POST',
@@ -88,7 +97,7 @@ const Login = ({ mode }) => {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                placeholder="Enter student email"
+                                placeholder="Enter student email (xx@bitsathy.ac.in)"
                                 disabled={loading}
                                 autoComplete="email"
                             />

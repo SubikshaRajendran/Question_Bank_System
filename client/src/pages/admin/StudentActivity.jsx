@@ -64,7 +64,7 @@ const StudentActivity = () => {
     return (
         <div className="student-activity-page">
             <header className="page-header" style={{ marginBottom: '2rem' }}>
-                <h1>
+                <h1 style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <Users size={32} />
                     Student Activity
                 </h1>
@@ -72,14 +72,14 @@ const StudentActivity = () => {
             </header>
 
             <div className="actions-bar" style={{ marginBottom: '2rem' }}>
-                <div className="search-box" style={{ flex: 1, maxWidth: '600px' }}>
+                <div className="search-box" style={{ flex: 1, maxWidth: '450px', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <Search size={24} />
                     <input
                         type="text"
                         placeholder="Search by name, username or email..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{ fontSize: '1.1rem', padding: '0.8rem' }}
+                        style={{ fontSize: '1rem', padding: '0.6rem' }}
                     />
                 </div>
             </div>

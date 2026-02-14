@@ -89,16 +89,6 @@ router.put('/admin/update-profile', async (req, res) => {
 router.post('/student/login', async (req, res) => {
     let { email, password, username } = req.body;
 
-    // We allow login if (email OR username) AND password are provided
-    // But for this specific requirement, the user asked to ADD Username to the login form.
-    // So the form will likely send both, or we can check.
-    // Let's assume the form might send email/password OR username/password, or all three.
-    // Given the prompt: "The student login form should now include: Username, Email, Password"
-    // It implies all three are present? That's unusual for login (usually it's one or the other),
-    // but I will stick to the requirement: "Username, Email, Password".
-    // I will verify the user with Email AND Password, and if 'username' is provided,
-    // I will update the user's username if it's missing.
-
     if (!email || !password) {
         return res.status(400).json({ success: false, message: 'Email and password required' });
     }
@@ -109,44 +99,62 @@ router.post('/student/login', async (req, res) => {
         return res.status(403).json({ success: false, message: 'Admin cannot login as student' });
     }
 
+    // Domain Validation
+    if (!email.endsWith('@bitsathy.ac.in')) {
+        return res.status(403).json({ success: false, message: 'Only @bitsathy.ac.in emails are allowed' });
+    }
+
     try {
         let user = await User.findOne({ email });
 
         if (!user) {
-            // Auto-register (Demo Mode)
-            // If username is provided in the form, use it. Otherwise derive from email.
+            // New Student (Auto-Register)
+            // Enforce Default Password Policy: First 4 chars of email
+            const defaultPass = email.substring(0, 4);
+
+            if (password !== defaultPass) {
+                return res.status(401).json({
+                    success: false,
+                    message: `New users must log in with the default password (first 4 letters of your email, e.g., '${defaultPass}')`
+                });
+            }
+
+            // Create new user with HASHED password
+            const hashedPassword = await bcrypt.hash(password, 10);
             const newUsername = username ? username.trim() : email.split('@')[0];
 
             user = new User({
-                name: newUsername, // Using username as name for now if not provided otherwise
+                name: newUsername,
                 username: newUsername,
                 email,
-                password: password,
+                password: hashedPassword, // Storing hash
                 registeredCourses: [],
                 lastLogin: new Date()
             });
             await user.save();
+
         } else {
-            // User exists
+            // Existing Student
+            // Verify Password (Hash)
+            const isMatch = await bcrypt.compare(password, user.password);
+
+            if (!isMatch) {
+                return res.status(401).json({ success: false, message: 'Invalid Credentials' });
+            }
+
             // Update lastLogin
             user.lastLogin = new Date();
-
-            // If the user doesn't have a username yet (migrating old users), set it from request or email
             if (!user.username) {
                 user.username = username ? username.trim() : user.email.split('@')[0];
-            }
-            // Update username if provided and different? Maybe not, don't overwrite blindly.
-            // But the requirement says "Student Login page, add a new field called Username".
-            // This suggests we might want to ensure the username matches or update it?
-            // For safety, I'll just ensure it's set.
-
-            if (!user.registeredCourses) {
-                user.registeredCourses = [];
             }
             await user.save();
         }
 
-        res.json({ success: true, role: 'student', user });
+        // Return success with user data (excluding password ideally, but avoiding breaking changes to frontend expectations of 'user' object)
+        const userObj = user.toObject();
+        delete userObj.password;
+
+        res.json({ success: true, role: 'student', user: userObj });
 
     } catch (err) {
         console.error('Login Error:', err);
@@ -160,6 +168,12 @@ router.post('/student/register', async (req, res) => {
     if (!email || !password) return res.status(400).json({ error: 'Missing fields' });
 
     email = email.trim().toLowerCase();
+
+    // Domain Validation
+    if (!email.endsWith('@bitsathy.ac.in')) {
+        return res.status(400).json({ error: 'Only @bitsathy.ac.in emails are allowed' });
+    }
+
     const finalUsername = username ? username.trim() : email.split('@')[0];
 
     try {
