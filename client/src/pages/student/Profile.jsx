@@ -242,7 +242,6 @@ const StudentProfile = () => {
                                     value={fullName}
                                     onChange={(e) => setFullName(e.target.value)}
                                     disabled={!isProfileEditing}
-                                    placeholder="e.g. John Doe"
                                     style={{ width: '100%', cursor: isProfileEditing ? 'text' : 'default', backgroundColor: isProfileEditing ? 'var(--bg-color)' : 'var(--bg-secondary)' }}
                                 />
                             </div>
@@ -253,7 +252,6 @@ const StudentProfile = () => {
                                     value={department}
                                     onChange={(e) => setDepartment(e.target.value)}
                                     disabled={!isProfileEditing}
-                                    placeholder="e.g. CS Cluster"
                                     style={{ width: '100%', cursor: isProfileEditing ? 'text' : 'default', backgroundColor: isProfileEditing ? 'var(--bg-color)' : 'var(--bg-secondary)' }}
                                 />
                             </div>
@@ -264,7 +262,6 @@ const StudentProfile = () => {
                                     value={phoneNumber}
                                     onChange={(e) => setPhoneNumber(e.target.value)}
                                     disabled={!isProfileEditing}
-                                    placeholder="e.g. +1 234 567 8900"
                                     style={{ width: '100%', cursor: isProfileEditing ? 'text' : 'default', backgroundColor: isProfileEditing ? 'var(--bg-color)' : 'var(--bg-secondary)' }}
                                 />
                             </div>
