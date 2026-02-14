@@ -249,9 +249,10 @@ router.put('/:id/profile', upload.single('profilePicture'), async (req, res) => 
         }
 
         // Update Details
-        if (fullName) user.fullName = fullName;
-        if (department) user.department = department;
-        if (phoneNumber) user.phoneNumber = phoneNumber;
+        // Update Details
+        if (fullName !== undefined) user.fullName = fullName;
+        if (department !== undefined) user.department = department;
+        if (phoneNumber !== undefined) user.phoneNumber = phoneNumber;
 
         // Handle Image Upload
         if (req.file) {

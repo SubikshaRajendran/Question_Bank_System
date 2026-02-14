@@ -28,7 +28,7 @@ const StudentProfile = () => {
     const [profilePicFile, setProfilePicFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState('');
 
-    const isProfileComplete = user?.fullName && user?.department && user?.phoneNumber;
+    const isProfileComplete = user?.fullName && user?.department && user?.phoneNumber && user?.profilePicture;
 
     useEffect(() => {
         if (user) {
