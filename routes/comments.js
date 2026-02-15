@@ -44,7 +44,7 @@ router.get('/student/:userId', async (req, res) => {
 router.get('/admin', async (req, res) => {
     try {
         const comments = await Comment.find()
-            .populate('userId', 'name email')
+            .populate('userId', 'name username email')
             .populate('questionId', 'text')
             .populate('courseId', 'title')
             .sort({ createdAt: -1 });
@@ -62,7 +62,11 @@ router.put('/:id/reply', async (req, res) => {
             req.params.id,
             { reply, isResolved: true },
             { new: true }
-        );
+        )
+            .populate('userId', 'name username email')
+            .populate('questionId', 'text')
+            .populate('courseId', 'title');
+
         res.json(comment);
     } catch (err) {
         res.status(500).json({ error: err.message });

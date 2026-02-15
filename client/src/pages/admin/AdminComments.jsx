@@ -82,7 +82,7 @@ const AdminComments = () => {
         <div key={c._id} className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
                 <div>
-                    <span style={{ fontWeight: 600 }}>{c.userId?.name || 'Unknown User'}</span>
+                    <span style={{ fontWeight: 600 }}>{c.userId?.username || c.userId?.name || 'Unknown User'}</span>
                     <span style={{ color: 'var(--text-secondary)', marginLeft: '0.5rem', fontSize: '0.9rem' }}>({c.userId?.email})</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -235,7 +235,7 @@ const AdminComments = () => {
 
                         <div style={{ marginBottom: '1.5rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                <span style={{ fontWeight: 600, fontSize: '1.1rem' }}>{viewingComment.userId?.name || 'Unknown User'}</span>
+                                <span style={{ fontWeight: 600, fontSize: '1.1rem' }}>{viewingComment.userId?.username || viewingComment.userId?.name || 'Unknown User'}</span>
                                 <span style={{ color: 'var(--text-secondary)' }}>{new Date(viewingComment.createdAt).toLocaleString()}</span>
                             </div>
                             <div style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>{viewingComment.userId?.email}</div>
