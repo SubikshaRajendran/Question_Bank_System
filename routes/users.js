@@ -169,7 +169,7 @@ router.get('/:id/dashboard-data', async (req, res) => {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ error: 'User not found' });
 
-        const allCourses = await Course.find().lean();
+        const allCourses = await Course.find().sort({ order: 1 }).lean();
         const coursesData = [];
 
         for (const course of allCourses) {
