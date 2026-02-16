@@ -11,6 +11,7 @@ const UserSchema = new mongoose.Schema({
     profilePicture: { type: String }, // URL to uploaded image
     password: { type: String, required: true },
     lastLogin: { type: Date }, // Added lastLogin
+    isOnline: { type: Boolean, default: false }, // Track online status
     completedCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
     registeredCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
     flaggedQuestions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }],

@@ -31,10 +31,24 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('role', role);
     };
 
-    const logout = () => {
-        setUser(null);
-        localStorage.removeItem('user');
-        localStorage.removeItem('role');
+    const logout = async () => {
+        try {
+            if (user && user._id) {
+                // Call backend to set offline status
+                await fetch('/api/auth/student/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: user._id })
+                });
+            }
+        } catch (error) {
+            console.error("Logout API failed", error);
+        } finally {
+            // Clear local state regardless of API success
+            setUser(null);
+            localStorage.removeItem('user');
+            localStorage.removeItem('role');
+        }
     };
 
     return (

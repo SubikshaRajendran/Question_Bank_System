@@ -61,9 +61,13 @@ const ReviewLater = () => {
                                 </Link>
 
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
-                                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                                        Course: <Link to={`/course/${course?._id}`} style={{ color: 'var(--primary-color)' }}>{course ? course.title : 'Unknown'}</Link>
-                                    </div>
+                                    <Link
+                                        to={`/course/${course?._id}#${q._id}`}
+                                        style={{ color: 'var(--primary-color)', fontSize: '0.9rem', fontWeight: '500', textDecoration: 'none' }}
+                                        className="view-course-link"
+                                    >
+                                        View in Course: {course ? course.title : 'Unknown'}
+                                    </Link>
 
                                     <button
                                         className="btn btn-sm btn-danger-outline"

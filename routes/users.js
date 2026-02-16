@@ -42,7 +42,7 @@ router.get('/', async (req, res) => {
         // Fetch all users, sorted by most recent activity (lastLogin) desc
         // Filter out users who have never logged in (old records without lastLogin)
         const users = await User.find({ lastLogin: { $exists: true, $ne: null } })
-            .select('username email lastLogin createdAt name')
+            .select('username email lastLogin createdAt name isOnline')
             .sort({ lastLogin: -1 });
         res.json(users);
     } catch (err) {
@@ -70,6 +70,9 @@ router.post('/:id/register-course', async (req, res) => {
 router.get('/:id/registered-courses', async (req, res) => {
     try {
         const user = await User.findById(req.params.id).populate('registeredCourses').lean();
+
+        // Update last activity
+        await User.findByIdAndUpdate(req.params.id, { lastLogin: new Date(), isOnline: true });
 
         if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -168,6 +171,11 @@ router.get('/:id/dashboard-data', async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ error: 'User not found' });
+
+        // Update last activity
+        user.lastLogin = new Date();
+        user.isOnline = true;
+        await user.save();
 
         const allCourses = await Course.find().sort({ order: 1 }).lean();
         const coursesData = [];

@@ -66,11 +66,11 @@ const CourseCard = ({ course }) => {
     };
 
     let btnText = isRegistered ? 'Continue' : 'Register';
-    if (isRegistered && progress === 100) btnText = 'Done';
+    if (isRegistered && progress === 100) btnText = 'Completed';
     if (isRegistered && progress === 0) btnText = 'Start';
 
     return (
-        <div className="bento-box" style={{ minHeight: '240px', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div className="bento-box" style={{ minHeight: '260px', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             {course.image && (
                 <div style={{ width: '100%', aspectRatio: '16/9', borderBottom: '1px solid var(--border-color)', backgroundColor: '#f3f4f6', overflow: 'hidden' }}>
                     <img
@@ -81,23 +81,23 @@ const CourseCard = ({ course }) => {
                     />
                 </div>
             )}
-            <div className="course-card-content" style={{ padding: '0.8rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.3rem' }}>
+            <div className="course-card-content" style={{ padding: '1rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
                     <div className="bento-meta" style={{ marginBottom: 0 }}>
                         {difficulty && (
-                            <span className={`difficulty-badge ${getDifficultyColor(difficulty)}`} style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem' }}>
+                            <span className={`difficulty-badge ${getDifficultyColor(difficulty)}`} style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}>
                                 {difficulty}
                             </span>
                         )}
                     </div>
                 </div>
 
-                <h3 className="bento-title" style={{ fontSize: '1rem', marginBottom: '0.3rem', lineHeight: '1.2' }}>{title}</h3>
+                <h3 className="bento-title" style={{ fontSize: '1.2rem', marginBottom: '0.5rem', lineHeight: '1.3' }}>{title}</h3>
 
                 {tags && (
-                    <div style={{ display: 'flex', gap: '0.2rem', flexWrap: 'wrap', marginBottom: '0.3rem' }}>
+                    <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
                         {tags.map((tag, idx) => (
-                            <span key={idx} className="tag" style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem' }}>#{tag}</span>
+                            <span key={idx} className="tag" style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem' }}>#{tag}</span>
                         ))}
                     </div>
                 )}
@@ -109,32 +109,32 @@ const CourseCard = ({ course }) => {
 
                 {/* Progress Bar (Bottom Spacer Wrapper) */}
                 {isRegistered ? (
-                    <div className="bottom-spacer progress-wrapper" style={{ marginBottom: '0.4rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', marginBottom: '0.1rem' }}>
+                    <div className="bottom-spacer progress-wrapper" style={{ marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.3rem' }}>
                             <span>Progress</span>
                             <span>{progress}%</span>
                         </div>
-                        <div className="progress-container" style={{ margin: '0.2rem 0', height: '0.4rem' }}>
+                        <div className="progress-container" style={{ margin: '0.3rem 0', height: '0.6rem' }}>
                             <div className={`progress-bar ${progressClass}`} style={{ width: `${progress}%` }}></div>
                         </div>
                     </div>
                 ) : (
-                    <div className="bottom-spacer" style={{ marginBottom: '0.4rem', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
+                    <div className="bottom-spacer" style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                         Click register to start.
                     </div>
                 )}
 
-                <div className="bento-actions" style={{ display: 'flex', gap: '0.4rem', marginTop: 'auto' }}>
+                <div className="bento-actions" style={{ display: 'flex', gap: '0.8rem', marginTop: 'auto' }}>
                     <button
-                        className="btn btn-secondary btn-sm"
+                        className="btn btn-secondary"
                         onClick={() => setShowDesc(!showDesc)}
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.6rem 1rem', fontSize: '0.95rem', borderRadius: '0.5rem' }}
                     >
-                        <Info size={14} /> Info
+                        <Info size={18} /> Info
                     </button>
                     <button
-                        className={`btn btn-sm ${!isRegistered ? 'btn-danger-dark' : ''}`}
-                        style={{ flexGrow: 1, backgroundColor: !isRegistered ? '#10b981' : '', padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
+                        className={`btn ${!isRegistered ? 'btn-danger-dark' : ''}`}
+                        style={{ flexGrow: 1, backgroundColor: !isRegistered ? '#10b981' : '', padding: '0.6rem 1rem', fontSize: '1rem', fontWeight: '600', borderRadius: '0.5rem' }}
                         onClick={handleMainClick}
                         disabled={registering}
                     >

@@ -129,7 +129,9 @@ router.post('/student/login', async (req, res) => {
                 email,
                 password: hashedPassword, // Storing hash
                 registeredCourses: [],
-                lastLogin: new Date()
+                registeredCourses: [],
+                lastLogin: new Date(),
+                isOnline: true
             });
             await user.save();
 
@@ -143,7 +145,9 @@ router.post('/student/login', async (req, res) => {
             }
 
             // Update lastLogin
+            // Update lastLogin and isOnline
             user.lastLogin = new Date();
+            user.isOnline = true;
             if (!user.username) {
                 user.username = username ? username.trim() : user.email.split('@')[0];
             }
@@ -192,6 +196,24 @@ router.post('/student/register', async (req, res) => {
         res.json({ success: true, user: newUser });
     } catch (err) {
         res.status(400).json({ error: err.message });
+    }
+});
+
+// Logout (Set Offline)
+router.post('/student/logout', async (req, res) => {
+    try {
+        const { userId } = req.body;
+        if (!userId) return res.status(400).json({ error: 'User ID required' });
+
+        const user = await User.findById(userId);
+        if (user) {
+            user.isOnline = false;
+            user.lastLogin = new Date(); // Update last active time
+            await user.save();
+        }
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
