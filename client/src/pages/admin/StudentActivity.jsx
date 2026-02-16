@@ -11,11 +11,18 @@ const StudentActivity = () => {
 
     useEffect(() => {
         loadStudents();
+
+        // Auto-refresh every 30 seconds to update status/times
+        const intervalId = setInterval(() => {
+            loadStudents(false); // Pass false to avoid showing loading spinner on background refreshes
+        }, 10000); // 10 seconds for "real-time" feel
+
+        return () => clearInterval(intervalId); // Cleanup on unmount
     }, []);
 
-    const loadStudents = async () => {
+    const loadStudents = async (showLoading = true) => {
         try {
-            setLoading(true);
+            if (showLoading) setLoading(true);
             const data = await fetchApi('/users');
             if (Array.isArray(data)) {
                 setStudents(data);
