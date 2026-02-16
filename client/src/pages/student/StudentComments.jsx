@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { fetchApi } from '../../utils/api';
 import { Link } from 'react-router-dom';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, MessageCircleQuestion, MessageSquare } from 'lucide-react';
 
 const StudentComments = () => {
     const { user } = useAuth();
@@ -11,6 +11,7 @@ const StudentComments = () => {
     const [showModal, setShowModal] = useState(false);
     const [newComment, setNewComment] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [activeTab, setActiveTab] = useState('questions'); // 'questions' | 'general'
 
     useEffect(() => {
         loadComments();
@@ -42,9 +43,7 @@ const StudentComments = () => {
                 })
             });
 
-            // Re-fetch to get consistent data structure (populated fields if any, though none for general)
-            // or just prepend carefully. Let's re-fetch for simplicity or prepend.
-            // data returned is the comment object
+            // Re-fetch to get consistent data structure
             setComments([data, ...comments]);
             setNewComment('');
             setShowModal(false);
@@ -55,69 +54,163 @@ const StudentComments = () => {
         }
     };
 
+    const questionDoubts = comments.filter(c => c.type !== 'general' && c.questionId);
+    const generalComments = comments.filter(c => c.type === 'general');
+
     if (loading) return <div className="container">Loading comments...</div>;
 
     return (
         <div className="container">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h2 className="section-header" style={{ marginBottom: 0 }}>My Comments</h2>
-                <button className="btn" onClick={() => setShowModal(true)}>
-                    <Plus size={18} style={{ marginRight: '0.5rem' }} />
-                    New
+            <h2 className="section-header" style={{ marginBottom: '1.5rem' }}>My Comments</h2>
+
+            {/* Tabs */}
+            <div className="tabs" style={{ marginBottom: '2rem', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '2rem' }}>
+                <button
+                    className={`tab-btn ${activeTab === 'questions' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('questions')}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: '0.75rem 0',
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        color: activeTab === 'questions' ? 'var(--primary-color)' : 'var(--text-secondary)',
+                        borderBottom: activeTab === 'questions' ? '2px solid var(--primary-color)' : '2px solid transparent',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                    }}
+                >
+                    <MessageCircleQuestion size={18} /> Question Doubts
+                    <span style={{ background: 'var(--bg-secondary)', padding: '0.1rem 0.5rem', borderRadius: '1rem', fontSize: '0.8rem' }}>
+                        {questionDoubts.length}
+                    </span>
+                </button>
+                <button
+                    className={`tab-btn ${activeTab === 'general' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('general')}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: '0.75rem 0',
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        color: activeTab === 'general' ? 'var(--primary-color)' : 'var(--text-secondary)',
+                        borderBottom: activeTab === 'general' ? '2px solid var(--primary-color)' : '2px solid transparent',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                    }}
+                >
+                    <MessageSquare size={18} /> General Comments
+                    <span style={{ background: 'var(--bg-secondary)', padding: '0.1rem 0.5rem', borderRadius: '1rem', fontSize: '0.8rem' }}>
+                        {generalComments.length}
+                    </span>
                 </button>
             </div>
 
-            {comments.length === 0 ? (
-                <div className="no-results">
-                    <p>You haven't posted any comments yet.</p>
-                </div>
-            ) : (
-                <div className="student-grid">
-                    {comments.map(c => (
-                        <div key={c._id} className="bento-box" style={{ display: 'block' }}>
-                            <div style={{ marginBottom: '1rem' }}>
-                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
-                                    <span>{new Date(c.createdAt).toLocaleDateString()}</span>
-                                    {c.type === 'general' ? (
-                                        <span className="tag" style={{ background: '#e0e7ff', color: '#4338ca' }}>General</span>
+            {/* Question Doubts Tab */}
+            {activeTab === 'questions' && (
+                <div>
+                    {questionDoubts.length === 0 ? (
+                        <div className="no-results">
+                            <p>No question doubts found.</p>
+                        </div>
+                    ) : (
+                        <div className="student-grid">
+                            {questionDoubts.map(c => (
+                                <div key={c._id} className="bento-box" style={{ display: 'block' }}>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
+                                            <span>{new Date(c.createdAt).toLocaleDateString()}</span>
+                                            <span style={{ fontWeight: 600, color: 'var(--primary-color)' }}>{c.courseId?.title || 'Unknown Course'}</span>
+                                        </div>
+
+                                        <div style={{ fontWeight: 600, marginBottom: '0.75rem', fontSize: '1rem', lineHeight: '1.4' }}>
+                                            Q: {c.questionId?.text}
+                                        </div>
+
+                                        <div style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: '0.5rem', fontSize: '0.95rem', borderLeft: '3px solid var(--text-secondary)' }}>
+                                            "{c.text}"
+                                        </div>
+                                    </div>
+
+                                    {c.reply ? (
+                                        <div style={{ marginTop: '1rem', paddingLeft: '1rem', borderLeft: '3px solid var(--success)' }}>
+                                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--success)', marginBottom: '0.25rem' }}>
+                                                Admin Reply:
+                                            </div>
+                                            <div style={{ fontSize: '0.95rem' }}>{c.reply}</div>
+                                        </div>
                                     ) : (
-                                        <span>{c.courseId?.title || 'Unknown Course'}</span>
+                                        <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24' }}></div>
+                                            Awaiting reply...
+                                        </div>
+                                    )}
+
+                                    {c.courseId && c.questionId && (
+                                        <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+                                            <Link to={`/course/${c.courseId._id}#${c.questionId._id}`} className="btn btn-sm btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
+                                                View in Course
+                                            </Link>
+                                        </div>
                                     )}
                                 </div>
-
-                                {c.type !== 'general' && (
-                                    <div style={{ fontWeight: 500, marginBottom: '0.5rem' }}>
-                                        Q: {c.questionId?.text || 'Question deleted'}
-                                    </div>
-                                )}
-
-                                <div style={{ padding: '0.75rem', background: 'var(--bg-color)', borderRadius: '4px', fontSize: '0.95rem' }}>
-                                    "{c.text}"
-                                </div>
-                            </div>
-
-                            {c.reply ? (
-                                <div style={{ marginTop: '1rem', paddingLeft: '1rem', borderLeft: '3px solid var(--primary-color)' }}>
-                                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--primary-color)', marginBottom: '0.25rem' }}>
-                                        Admin Reply:
-                                    </div>
-                                    <div style={{ fontSize: '0.95rem' }}>{c.reply}</div>
-                                </div>
-                            ) : (
-                                <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                                    Awaiting reply...
-                                </div>
-                            )}
-
-                            {c.type !== 'general' && c.courseId && (
-                                <div style={{ marginTop: '1rem' }}>
-                                    <Link to={`/course/${c.courseId._id}#${c.questionId?._id}`} className="btn btn-sm btn-secondary">
-                                        View in Course
-                                    </Link>
-                                </div>
-                            )}
+                            ))}
                         </div>
-                    ))}
+                    )}
+                </div>
+            )}
+
+            {/* General Comments Tab */}
+            {activeTab === 'general' && (
+                <div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.5rem' }}>
+                        <button className="btn" onClick={() => setShowModal(true)}>
+                            <Plus size={18} style={{ marginRight: '0.5rem' }} />
+                            New General Comment
+                        </button>
+                    </div>
+
+                    {generalComments.length === 0 ? (
+                        <div className="no-results">
+                            <p>No general comments yet.</p>
+                        </div>
+                    ) : (
+                        <div className="student-grid">
+                            {generalComments.map(c => (
+                                <div key={c._id} className="bento-box" style={{ display: 'block' }}>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
+                                            <span>{new Date(c.createdAt).toLocaleDateString()}</span>
+                                            <span className="tag" style={{ background: '#e0e7ff', color: '#4338ca' }}>General</span>
+                                        </div>
+
+                                        <div style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: '0.5rem', fontSize: '0.95rem', borderLeft: '3px solid var(--text-secondary)' }}>
+                                            "{c.text}"
+                                        </div>
+                                    </div>
+
+                                    {c.reply ? (
+                                        <div style={{ marginTop: '1rem', paddingLeft: '1rem', borderLeft: '3px solid var(--success)' }}>
+                                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--success)', marginBottom: '0.25rem' }}>
+                                                Admin Reply:
+                                            </div>
+                                            <div style={{ fontSize: '0.95rem' }}>{c.reply}</div>
+                                        </div>
+                                    ) : (
+                                        <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24' }}></div>
+                                            Awaiting reply...
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -132,10 +225,11 @@ const StudentComments = () => {
                         background: 'var(--card-bg)', padding: '2rem', borderRadius: '1rem',
                         width: '90%', maxWidth: '500px',
                         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                        border: '1px solid var(--border-color)'
+                        border: '1px solid var(--border-color)',
+                        animation: 'popIn 0.2s ease-out'
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                            <h3>New General Comment</h3>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>New General Comment</h3>
                             <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
                                 <X size={24} />
                             </button>
@@ -143,7 +237,7 @@ const StudentComments = () => {
 
                         <form onSubmit={handleAddComment}>
                             <div className="form-group">
-                                <label>Your Comment / Suggestion</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Your Comment / Suggestion</label>
                                 <textarea
                                     rows="4"
                                     placeholder="Type your suggestion, feedback, or general query here..."
@@ -151,12 +245,21 @@ const StudentComments = () => {
                                     onChange={e => setNewComment(e.target.value)}
                                     required
                                     autoFocus
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.75rem',
+                                        borderRadius: '0.5rem',
+                                        border: '1px solid var(--border-color)',
+                                        background: 'var(--bg-color)',
+                                        color: 'var(--text-color)',
+                                        fontFamily: 'inherit'
+                                    }}
                                 ></textarea>
                             </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
                                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-                                <button type="submit" className="btn" disabled={submitting}>
+                                <button type="submit" className="btn btn-primary" disabled={submitting}>
                                     {submitting ? 'Posting...' : 'Post Comment'}
                                 </button>
                             </div>
