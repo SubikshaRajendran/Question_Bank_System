@@ -23,6 +23,9 @@ const CourseView = () => {
 
     // Stats
     const totalQuestions = questions.length;
+    const completedQuestions = questions.filter(q => readQIds.includes(q._id)).length;
+    const remainingQuestions = Math.max(0, totalQuestions - completedQuestions);
+
     const [progress, setProgress] = useState(0);
     const [showStickyProgress, setShowStickyProgress] = useState(false);
     const headerRef = useRef(null);
@@ -259,11 +262,11 @@ const CourseView = () => {
                             <span className="stat-label">Total Questions</span>
                         </div>
                         <div className="stat-item">
-                            <span className="stat-value">{readQIds.length}</span>
+                            <span className="stat-value">{completedQuestions}</span>
                             <span className="stat-label">Completed</span>
                         </div>
                         <div className="stat-item">
-                            <span className="stat-value">{totalQuestions - readQIds.length}</span>
+                            <span className="stat-value">{remainingQuestions}</span>
                             <span className="stat-label">Remaining</span>
                         </div>
                     </div>
@@ -384,7 +387,7 @@ const CourseView = () => {
                             <text x="18" y="20.35" className="percentage">{progress}%</text>
                         </svg>
                         <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                            {readQIds.length} / {totalQuestions} Completed
+                            {completedQuestions} / {totalQuestions} Completed
                         </p>
                     </div>
 
