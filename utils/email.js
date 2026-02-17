@@ -22,8 +22,8 @@ const sendOTPEmail = async (email, otp) => {
 
         const transporter = nodemailer.createTransport({
             host: host,
-            port: 465,
-            secure: true, // true for 465, false for other ports
+            port: 587,
+            secure: false, // true for 465, false for other ports
             auth: {
                 user: user,
                 pass: pass
@@ -32,9 +32,9 @@ const sendOTPEmail = async (email, otp) => {
                 rejectUnauthorized: false,
                 servername: 'smtp.gmail.com' // Required when using IP address
             },
-            connectionTimeout: 10000, // 10 seconds
-            greetingTimeout: 5000,
-            socketTimeout: 10000,
+            connectionTimeout: 60000, // 60 seconds
+            greetingTimeout: 30000,
+            socketTimeout: 60000,
             // family: 4 // Already doing manual resolution
         });
 

@@ -39,8 +39,8 @@ router.post('/email', async (req, res) => {
 
         const transporter = nodemailer.createTransport({
             host: host,
-            port: 465,
-            secure: true,
+            port: 587,
+            secure: false,
             auth: {
                 user: user,
                 pass: pass
@@ -49,9 +49,9 @@ router.post('/email', async (req, res) => {
                 rejectUnauthorized: false,
                 servername: 'smtp.gmail.com'
             },
-            connectionTimeout: 10000,
-            greetingTimeout: 5000,
-            socketTimeout: 10000
+            connectionTimeout: 60000,
+            greetingTimeout: 30000,
+            socketTimeout: 60000
         });
 
         const mailOptions = {
