@@ -61,6 +61,7 @@ const seedAdmin = async () => {
 
 // Routes Placeholders
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/debug', require('./routes/debug'));
 app.use('/api/courses', require('./routes/courses'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/analytics', require('./routes/analytics'));

@@ -183,7 +183,10 @@ router.post('/student/register-init', async (req, res) => {
         }
 
         await user.save();
-        await sendOTPEmail(email, otp);
+        const emailResult = await sendOTPEmail(email, otp);
+        if (!emailResult.success) {
+            return res.status(500).json({ success: false, message: 'Failed to send OTP email: ' + JSON.stringify(emailResult.error) });
+        }
 
         res.json({ success: true, message: 'OTP sent to email' });
 
@@ -338,7 +341,10 @@ router.post('/student/resend-otp', async (req, res) => {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
 
-        await sendOTPEmail(email, otp);
+        const emailResult = await sendOTPEmail(email, otp);
+        if (!emailResult.success) {
+            return res.status(500).json({ success: false, message: 'Failed to send OTP email: ' + JSON.stringify(emailResult.error) });
+        }
 
         user.otp = otp;
         user.otpExpires = otpExpires;

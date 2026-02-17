@@ -9,7 +9,7 @@ const sendOTPEmail = async (email, otp) => {
         console.log('==================================================');
         console.log(`[DEV MODE] OTP for ${email}: ${otp}`);
         console.log('==================================================');
-        return true;
+        return { success: true };
     }
 
     try {
@@ -39,14 +39,10 @@ const sendOTPEmail = async (email, otp) => {
 
         await transporter.sendMail(mailOptions);
         console.log(`OTP sent to ${email}`);
-        return true;
+        return { success: true };
     } catch (error) {
         console.error('Error sending OTP email:', error);
-        // Fallback to console in case of error, to allow login during dev/unstable network
-        console.log('==================================================');
-        console.log(`[FALLBACK] OTP for ${email}: ${otp}`);
-        console.log('==================================================');
-        return false;
+        return { success: false, error: error.message || error };
     }
 };
 
