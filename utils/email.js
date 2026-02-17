@@ -14,7 +14,9 @@ const sendOTPEmail = async (email, otp) => {
 
     try {
         const transporter = nodemailer.createTransport({
-            service: process.env.MAIL_SERVICE || 'gmail', // Default to gmail
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true, // true for 465, false for other ports
             auth: {
                 user: user,
                 pass: pass
