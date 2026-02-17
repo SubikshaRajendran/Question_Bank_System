@@ -46,6 +46,10 @@ const StudentProfile = () => {
             setAccountError("Passwords do not match");
             return;
         }
+        if (newPassword && newPassword.length < 4) {
+            setAccountError("Password must be at least 4 characters");
+            return;
+        }
         setLoading(true);
         setAccountError('');
 

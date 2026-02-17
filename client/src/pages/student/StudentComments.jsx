@@ -64,7 +64,7 @@ const StudentComments = () => {
             <h2 className="section-header" style={{ marginBottom: '1.5rem' }}>My Comments</h2>
 
             {/* Tabs */}
-            <div className="tabs" style={{ marginBottom: '2rem', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '2rem' }}>
+            <div className="tabs" style={{ marginBottom: '2rem', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '2.5rem' }}>
                 <button
                     className={`tab-btn ${activeTab === 'questions' ? 'active' : ''}`}
                     onClick={() => setActiveTab('questions')}

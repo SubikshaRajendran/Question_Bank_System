@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchApi } from '../../utils/api';
 import ConfirmationModal from '../../components/ConfirmationModal';
-import { Eye, Trash2, X } from 'lucide-react';
+import { Eye, Trash2, X, MessageCircleQuestion, MessageSquare } from 'lucide-react';
 
 const AdminComments = () => {
     const [comments, setComments] = useState([]);
@@ -150,20 +150,52 @@ const AdminComments = () => {
             <h2 className="section-header">Student Comments & Doubts</h2>
 
             {/* Tabs */}
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--border-color)' }}>
+            <div style={{ display: 'flex', gap: '2.5rem', marginBottom: '2rem', borderBottom: '1px solid var(--border-color)' }}>
                 <button
-                    className={`btn ${activeTab === 'question' ? '' : 'btn-secondary'}`}
-                    style={{ borderRadius: '0.5rem 0.5rem 0 0', borderBottom: 'none' }}
+                    className={`tab-btn ${activeTab === 'question' ? 'active' : ''}`}
                     onClick={() => setActiveTab('question')}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: '0.75rem 0',
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        color: activeTab === 'question' ? 'var(--primary-color)' : 'var(--text-secondary)',
+                        borderBottom: activeTab === 'question' ? '2px solid var(--primary-color)' : '2px solid transparent',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        transition: 'all 0.3s ease'
+                    }}
                 >
-                    Question Doubts
+                    <MessageCircleQuestion size={18} /> Question Doubts
+                    <span style={{ background: 'var(--bg-secondary)', padding: '0.1rem 0.5rem', borderRadius: '1rem', fontSize: '0.8rem', color: 'var(--text-color)' }}>
+                        {questionComments.length}
+                    </span>
                 </button>
                 <button
-                    className={`btn ${activeTab === 'general' ? '' : 'btn-secondary'}`}
-                    style={{ borderRadius: '0.5rem 0.5rem 0 0', borderBottom: 'none' }}
+                    className={`tab-btn ${activeTab === 'general' ? 'active' : ''}`}
                     onClick={() => setActiveTab('general')}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: '0.75rem 0',
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        color: activeTab === 'general' ? 'var(--primary-color)' : 'var(--text-secondary)',
+                        borderBottom: activeTab === 'general' ? '2px solid var(--primary-color)' : '2px solid transparent',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        transition: 'all 0.3s ease'
+                    }}
                 >
-                    General Comments
+                    <MessageSquare size={18} /> General Comments
+                    <span style={{ background: 'var(--bg-secondary)', padding: '0.1rem 0.5rem', borderRadius: '1rem', fontSize: '0.8rem', color: 'var(--text-color)' }}>
+                        {generalComments.length}
+                    </span>
                 </button>
             </div>
 

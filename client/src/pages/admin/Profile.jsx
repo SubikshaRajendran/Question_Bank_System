@@ -62,6 +62,10 @@ const AdminProfile = () => {
             setError("Passwords do not match");
             return;
         }
+        if (newPassword && newPassword.length < 4) {
+            setError("Password must be at least 4 characters");
+            return;
+        }
         setLoading(true);
         setError('');
         try {

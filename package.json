@@ -18,6 +18,7 @@
     "mongoose": "^5.13.20",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
+    "nodemailer": "^8.0.1",
     "streamifier": "^0.1.1"
   },
   "license": "ISC",

@@ -8,6 +8,7 @@ import Landing from './pages/Landing';
 import About from './pages/About';
 import LoginSelection from './pages/LoginSelection';
 import Login from './pages/Login';
+import Register from './pages/Register';
 
 import StudentDashboard from './pages/student/Dashboard';
 import MyCourses from './pages/student/MyCourses';
@@ -34,6 +35,7 @@ function App() {
             <Route path="login" element={<LoginSelection />} />
             <Route path="login/student" element={<Login mode="student" />} />
             <Route path="login/admin" element={<Login mode="admin" />} />
+            <Route path="register" element={<Register />} />
 
             {/* Student Routes */}
             <Route element={<ProtectedRoute allowedRoles={['student']} />}>

@@ -253,6 +253,7 @@ router.put('/:id/profile', upload.single('profilePicture'), async (req, res) => 
 
         // Update Password
         if (newPassword) {
+            if (newPassword.length < 4) return res.status(400).json({ message: 'Password must be at least 4 characters' });
             user.password = await bcrypt.hash(newPassword, 10);
         }
 

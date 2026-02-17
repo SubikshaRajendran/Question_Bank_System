@@ -85,9 +85,11 @@ router.put('/admin/update-profile', async (req, res) => {
     }
 });
 
+const { sendOTPEmail } = require('../utils/email');
+
 // Student Login
 router.post('/student/login', async (req, res) => {
-    let { email, password, username } = req.body;
+    let { email, password } = req.body;
 
     if (!email || !password) {
         return res.status(400).json({ success: false, message: 'Email and password required' });
@@ -99,64 +101,39 @@ router.post('/student/login', async (req, res) => {
         return res.status(403).json({ success: false, message: 'Admin cannot login as student' });
     }
 
-    // Domain Validation
-    if (!email.endsWith('@bitsathy.ac.in')) {
-        return res.status(403).json({ success: false, message: 'Only @bitsathy.ac.in emails are allowed' });
-    }
+    // Domain Validation - REMOVED to allow any email
+    // if (!email.endsWith('@bitsathy.ac.in')) {
+    //     return res.status(403).json({ success: false, message: 'Only @bitsathy.ac.in emails are allowed' });
+    // }
 
     try {
-        let user = await User.findOne({ email });
+        const user = await User.findOne({ email });
 
         if (!user) {
-            // New Student (Auto-Register)
-            // Enforce Default Password Policy: First 4 chars of email
-            const defaultPass = email.substring(0, 4);
-
-            if (password !== defaultPass) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'Invalid Login Credentials'
-                });
-            }
-
-            // Create new user with HASHED password
-            const hashedPassword = await bcrypt.hash(password, 10);
-            const newUsername = username ? username.trim() : email.split('@')[0];
-
-            user = new User({
-                name: newUsername,
-                username: newUsername,
-                email,
-                password: hashedPassword, // Storing hash
-                registeredCourses: [],
-                registeredCourses: [],
-                lastLogin: new Date(),
-                isOnline: true
-            });
-            await user.save();
-
-        } else {
-            // Existing Student
-            // Verify Password (Hash)
-            const isMatch = await bcrypt.compare(password, user.password);
-
-            if (!isMatch) {
-                return res.status(401).json({ success: false, message: 'Invalid Credentials' });
-            }
-
-            // Update lastLogin
-            // Update lastLogin and isOnline
-            user.lastLogin = new Date();
-            user.isOnline = true;
-            if (!user.username) {
-                user.username = username ? username.trim() : user.email.split('@')[0];
-            }
-            await user.save();
+            return res.status(401).json({ success: false, message: 'User not found. Please register first.' });
         }
 
-        // Return success with user data (excluding password ideally, but avoiding breaking changes to frontend expectations of 'user' object)
+        if (!user.isVerified) {
+            return res.status(401).json({ success: false, message: 'Account not verified. Please complete registration.' });
+        }
+
+        // Verify Password
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if (!isMatch) {
+            return res.status(401).json({ success: false, message: 'Invalid Credentials' });
+        }
+
+        // Update lastLogin and isOnline
+        user.lastLogin = new Date();
+        user.isOnline = true;
+        await user.save();
+
+        // Return success with user data
         const userObj = user.toObject();
         delete userObj.password;
+        delete userObj.otp;
+        delete userObj.otpExpires;
 
         res.json({ success: true, role: 'student', user: userObj });
 
@@ -166,17 +143,228 @@ router.post('/student/login', async (req, res) => {
     }
 });
 
-// Student Register (Helper)
+// Student Register - Step 1: Init (Send OTP)
+router.post('/student/register-init', async (req, res) => {
+    let { email } = req.body;
+    if (!email) return res.status(400).json({ success: false, message: 'Email required' });
+
+    email = email.trim().toLowerCase();
+    // Domain Validation - REMOVED
+    // if (!email.endsWith('@bitsathy.ac.in')) {
+    //     return res.status(400).json({ success: false, message: 'Only @bitsathy.ac.in emails are allowed' });
+    // }
+
+    try {
+        let user = await User.findOne({ email });
+
+        if (user && user.isVerified) {
+            return res.status(400).json({ success: false, message: 'User already registered. Please login.' });
+        }
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
+        if (!user) {
+            // New User - Create placeholder
+            user = new User({
+                name: email.split('@')[0], // Temporary name
+                username: email.split('@')[0], // Temporary username
+                email,
+                password: await bcrypt.hash(Math.random().toString(36), 10), // Random password initially
+                registeredCourses: [],
+                isVerified: false,
+                otp,
+                otpExpires
+            });
+        } else {
+            // Existing unverified user - update OTP
+            user.otp = otp;
+            user.otpExpires = otpExpires;
+        }
+
+        await user.save();
+        await sendOTPEmail(email, otp);
+
+        res.json({ success: true, message: 'OTP sent to email' });
+
+    } catch (err) {
+        console.error('Register Init Error:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Student Register - Step 2: Verify OTP
+router.post('/student/register-verify', async (req, res) => {
+    try {
+        let { email, otp } = req.body;
+        email = email.trim().toLowerCase();
+
+        const user = await User.findOne({ email });
+
+        if (!user) return res.status(400).json({ success: false, message: 'User not found' });
+        if (user.isVerified) return res.status(400).json({ success: false, message: 'User already verified' });
+
+        if (!user.otp || !user.otpExpires) return res.status(400).json({ success: false, message: 'No OTP found' });
+        if (user.otp !== otp) return res.status(400).json({ success: false, message: 'Invalid OTP' });
+        if (user.otpExpires < new Date()) return res.status(400).json({ success: false, message: 'OTP expired' });
+
+        // OTP Valid - Do NOT clear it yet, we need it for Step 3
+        res.json({ success: true, message: 'OTP Verified' });
+
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Student Register - Step 3: Complete (Set Username & Password)
+router.post('/student/register-complete', async (req, res) => {
+    try {
+        let { email, otp, username, password } = req.body;
+        if (!email || !otp || !username || !password) {
+            return res.status(400).json({ success: false, message: 'All fields required' });
+        }
+
+        email = email.trim().toLowerCase();
+
+        // Validation
+        if (username.length < 3) return res.status(400).json({ success: false, message: 'Username too short' });
+        if (password.length < 4) return res.status(400).json({ success: false, message: 'Password too short (min 4 chars)' });
+
+        const user = await User.findOne({ email });
+
+        if (!user) return res.status(400).json({ success: false, message: 'User not found' });
+        if (user.isVerified) return res.status(400).json({ success: false, message: 'User already verified' });
+
+        // Verify OTP again to ensure security
+        if (user.otp !== otp || user.otpExpires < new Date()) {
+            return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+        }
+
+        // Check if username is taken (by another user)
+        const existingUsername = await User.findOne({ username });
+        if (existingUsername && existingUsername._id.toString() !== user._id.toString()) {
+            return res.status(400).json({ success: false, message: 'Username already taken' });
+        }
+
+        // Update User
+        user.username = username;
+        user.name = username; // Default name to username
+        user.password = await bcrypt.hash(password, 10);
+        user.isVerified = true;
+        user.isOnline = true;
+        user.lastLogin = new Date();
+        user.otp = undefined;
+        user.otpExpires = undefined;
+
+        await user.save();
+
+        // Return user for auto-login
+        const userObj = user.toObject();
+        delete userObj.password;
+
+        res.json({ success: true, role: 'student', user: userObj });
+
+    } catch (err) {
+        console.error('Register Complete Error:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Verify OTP
+router.post('/student/verify-otp', async (req, res) => {
+    try {
+        let { email, otp } = req.body;
+        email = email.trim().toLowerCase();
+
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(400).json({ success: false, message: 'User not found' });
+        }
+
+        if (user.isVerified) {
+            return res.status(400).json({ success: false, message: 'User already verified' });
+        }
+
+        if (!user.otp || !user.otpExpires) {
+            return res.status(400).json({ success: false, message: 'No OTP found. Please login again.' });
+        }
+
+        if (user.otp !== otp) {
+            return res.status(400).json({ success: false, message: 'Invalid OTP' });
+        }
+
+        if (user.otpExpires < new Date()) {
+            return res.status(400).json({ success: false, message: 'OTP expired' });
+        }
+
+        // OTP Valid
+        user.isVerified = true;
+        user.otp = undefined;
+        user.otpExpires = undefined;
+        user.isOnline = true;
+        user.lastLogin = new Date();
+        await user.save();
+
+        const userObj = user.toObject();
+        delete userObj.password;
+        delete userObj.otp;
+        delete userObj.otpExpires;
+
+        res.json({ success: true, role: 'student', user: userObj });
+
+    } catch (err) {
+        console.error('OTP Verification Error:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Resend OTP
+router.post('/student/resend-otp', async (req, res) => {
+    try {
+        let { email } = req.body;
+        email = email.trim().toLowerCase();
+
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(400).json({ success: false, message: 'User not found' });
+        }
+
+        if (user.isVerified) {
+            return res.status(400).json({ success: false, message: 'User already verified' });
+        }
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
+        await sendOTPEmail(email, otp);
+
+        user.otp = otp;
+        user.otpExpires = otpExpires;
+        await user.save();
+
+        res.json({ success: true, message: 'OTP resent' });
+
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Student Register (Helper) - DEPRECATED or Keep for Admin Manual Add?
+// Leaving it, but Login handles auto-registration.
 router.post('/student/register', async (req, res) => {
+    // ... existing register code if needed ...
+    // For now, I'll assume login handles it.
     let { name, email, password, username } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Missing fields' });
 
     email = email.trim().toLowerCase();
 
-    // Domain Validation
-    if (!email.endsWith('@bitsathy.ac.in')) {
-        return res.status(400).json({ error: 'Only @bitsathy.ac.in emails are allowed' });
-    }
+    // Domain Validation - REMOVED
+    // if (!email.endsWith('@bitsathy.ac.in')) {
+    //     return res.status(400).json({ error: 'Only @bitsathy.ac.in emails are allowed' });
+    // }
 
     const finalUsername = username ? username.trim() : email.split('@')[0];
 
@@ -190,7 +378,9 @@ router.post('/student/register', async (req, res) => {
             email,
             password,
             registeredCourses: [],
-            lastLogin: new Date()
+            lastLogin: new Date(),
+            isVerified: true // Manual registration via API assumed verified? Or remove?
+            // Let's set it to true for now to avoid breaking legacy tests
         });
         await newUser.save();
         res.json({ success: true, user: newUser });

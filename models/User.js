@@ -15,7 +15,10 @@ const UserSchema = new mongoose.Schema({
     completedCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
     registeredCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
     flaggedQuestions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }],
-    readQuestions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }] // Track individual question progress
+    readQuestions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }], // Track individual question progress
+    isVerified: { type: Boolean, default: false }, // OTP Verification status
+    otp: { type: String },
+    otpExpires: { type: Date }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema);
