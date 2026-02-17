@@ -39,8 +39,8 @@ router.post('/email', async (req, res) => {
 
         const transporter = nodemailer.createTransport({
             host: host,
-            port: 587,
-            secure: false,
+            port: 465,
+            secure: true,
             auth: {
                 user: user,
                 pass: pass
