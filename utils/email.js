@@ -21,7 +21,11 @@ const sendOTPEmail = async (email, otp) => {
             },
             tls: {
                 rejectUnauthorized: false
-            }
+            },
+            connectionTimeout: 10000, // 10 seconds
+            greetingTimeout: 5000,
+            socketTimeout: 10000,
+            family: 4 // Force IPv4 to avoid ENETUNREACH on IPv6
         });
 
         const mailOptions = {

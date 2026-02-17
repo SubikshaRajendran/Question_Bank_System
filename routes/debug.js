@@ -39,6 +39,10 @@ router.post('/email', async (req, res) => {
             tls: {
                 rejectUnauthorized: false
             },
+            connectionTimeout: 10000,
+            greetingTimeout: 5000,
+            socketTimeout: 10000,
+            family: 4, // Force IPv4
             debug: true, // Enable debug logs
             logger: true // Log to console
         });
