@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const nodemailer = require('nodemailer');
 
+const dns = require('dns');
+
 // Debug Email Route
 router.post('/email', async (req, res) => {
     const { email } = req.body;
@@ -30,8 +32,13 @@ router.post('/email', async (req, res) => {
     }
 
     try {
+        // Resolve to IPv4
+        const addresses = await dns.promises.resolve4('smtp.gmail.com');
+        const host = addresses[0];
+        debugInfo.resolvedHost = host;
+
         const transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
+            host: host,
             port: 587,
             secure: false,
             auth: {
@@ -39,14 +46,12 @@ router.post('/email', async (req, res) => {
                 pass: pass
             },
             tls: {
-                rejectUnauthorized: false
+                rejectUnauthorized: false,
+                servername: 'smtp.gmail.com'
             },
             connectionTimeout: 10000,
             greetingTimeout: 5000,
-            socketTimeout: 10000,
-            family: 4, // Force IPv4
-            debug: true, // Enable debug logs
-            logger: true // Log to console
+            socketTimeout: 10000
         });
 
         const mailOptions = {
