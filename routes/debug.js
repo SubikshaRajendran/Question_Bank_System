@@ -4,8 +4,17 @@ const nodemailer = require('nodemailer');
 
 const dns = require('dns');
 
-// Debug Email Route
-router.post('/email', async (req, res) => {
+// GET Route for browser testing
+router.get('/email', async (req, res) => {
+    // Wrap the POST logic or call it directly
+    req.body.email = req.query.email || 'test_debug@example.com';
+    // We'll duplicate logic for simplicity to ensure it works
+    await handleDebugEmail(req, res);
+});
+
+router.post('/email', handleDebugEmail);
+
+async function handleDebugEmail(req, res) {
     const { email } = req.body;
 
     if (!email) {
@@ -14,40 +23,49 @@ router.post('/email', async (req, res) => {
 
     const user = process.env.MAIL_USER;
     const pass = process.env.MAIL_PASS;
-    const service = process.env.MAIL_SERVICE || 'gmail';
+
+    // Diagnostic DNS Lookup
+    let dnsInfo = { ipv4: [], ipv6: [] };
+    try {
+        const ipv4 = await dns.promises.resolve4('smtp.gmail.com').catch(e => e.message);
+        const ipv6 = await dns.promises.resolve6('smtp.gmail.com').catch(e => e.message);
+        dnsInfo = { ipv4, ipv6 };
+    } catch (e) {
+        dnsInfo.error = e.message;
+    }
 
     const debugInfo = {
         userConfigured: !!user,
         passConfigured: !!pass,
-        service: service,
-        targetEmail: email
+        targetEmail: email,
+        dns: dnsInfo
     };
 
     if (!user || !pass) {
         return res.status(500).json({
             success: false,
-            message: 'Mail credentials missing in environment variables',
+            message: 'Mail credentials missing',
             debug: debugInfo
         });
     }
 
     try {
-        // Resolve to IPv4
-        const addresses = await dns.promises.resolve4('smtp.gmail.com');
-        const host = addresses[0];
-        debugInfo.resolvedHost = host;
+        // Use dns.lookup to respect system checking which might work better on Render
+        const { address, family } = await dns.promises.lookup('smtp.gmail.com', { family: 4 });
+        debugInfo.resolvedIp = address;
+        debugInfo.resolvedFamily = family;
 
         const transporter = nodemailer.createTransport({
-            host: host,
+            host: address, // Use the resolved IPv4 address
             port: 587,
-            secure: false,
+            secure: false, // STARTTLS
             auth: {
                 user: user,
                 pass: pass
             },
             tls: {
-                rejectUnauthorized: false,
-                servername: 'smtp.gmail.com'
+                rejectUnauthorized: false, // Allow self-signed certs if any
+                servername: 'smtp.gmail.com' // SNI is crucial when using IP
             },
             connectionTimeout: 60000,
             greetingTimeout: 30000,
@@ -58,7 +76,7 @@ router.post('/email', async (req, res) => {
             from: user,
             to: email,
             subject: 'Question Bank System - Debug Email',
-            text: 'This is a test email to verify SMTP configuration.',
+            text: `Debug email from Question Bank System.\n\nResolved IP: ${address}\nTimestamp: ${new Date().toISOString()}`,
         };
 
         const info = await transporter.sendMail(mailOptions);
@@ -75,10 +93,10 @@ router.post('/email', async (req, res) => {
         res.status(500).json({
             success: false,
             message: error.message,
-            error: error,
+            error: error, // Return full error object
             debug: debugInfo
         });
     }
-});
+}
 
 module.exports = router;

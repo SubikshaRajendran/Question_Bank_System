@@ -15,15 +15,14 @@ const sendOTPEmail = async (email, otp) => {
     }
 
     try {
-        // Resolve hostname to IPv4 manually to prevent IPv6 issues
-        const addresses = await dns.promises.resolve4('smtp.gmail.com');
-        const host = addresses[0]; // Use the first IPv4 address
-        console.log(`Resolved smtp.gmail.com to IPv4: ${host}`);
+        // Resolve hostname to IPv4 using dns.lookup (respects system config)
+        const { address } = await dns.promises.lookup('smtp.gmail.com', { family: 4 });
+        console.log(`Resolved smtp.gmail.com to IPv4: ${address}`);
 
         const transporter = nodemailer.createTransport({
-            host: host,
+            host: address,
             port: 587,
-            secure: false, // true for 465, false for other ports
+            secure: false, // STARTTLS
             auth: {
                 user: user,
                 pass: pass
@@ -35,7 +34,6 @@ const sendOTPEmail = async (email, otp) => {
             connectionTimeout: 60000, // 60 seconds
             greetingTimeout: 30000,
             socketTimeout: 60000,
-            // family: 4 // Already doing manual resolution
         });
 
         const mailOptions = {
