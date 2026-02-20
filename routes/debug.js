@@ -50,22 +50,19 @@ async function handleDebugEmail(req, res) {
     }
 
     try {
-        // Use dns.lookup to respect system checking which might work better on Render
-        const { address, family } = await dns.promises.lookup('smtp.gmail.com', { family: 4 });
-        debugInfo.resolvedIp = address;
-        debugInfo.resolvedFamily = family;
+        debugInfo.resolvedIp = 'smtp.gmail.com';
+        debugInfo.resolvedFamily = 'N/A';
 
         const transporter = nodemailer.createTransport({
-            host: address, // Use the resolved IPv4 address
-            port: 587,
-            secure: false, // STARTTLS
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true, // Use SSL/TLS
             auth: {
                 user: user,
                 pass: pass
             },
             tls: {
-                rejectUnauthorized: false, // Allow self-signed certs if any
-                servername: 'smtp.gmail.com' // SNI is crucial when using IP
+                rejectUnauthorized: false
             },
             connectionTimeout: 60000,
             greetingTimeout: 30000,

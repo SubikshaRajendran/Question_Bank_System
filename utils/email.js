@@ -15,21 +15,18 @@ const sendOTPEmail = async (email, otp) => {
     }
 
     try {
-        // Resolve hostname to IPv4 using dns.lookup (respects system config)
-        const { address } = await dns.promises.lookup('smtp.gmail.com', { family: 4 });
-        console.log(`Resolved smtp.gmail.com to IPv4: ${address}`);
-
+        // Use standard Gmail configuration with port 465 and secure connection
+        // This is more reliable on cloud platforms like Render
         const transporter = nodemailer.createTransport({
-            host: address,
-            port: 587,
-            secure: false, // STARTTLS
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true, // Use SSL/TLS
             auth: {
                 user: user,
                 pass: pass
             },
             tls: {
-                rejectUnauthorized: false,
-                servername: 'smtp.gmail.com' // Required when using IP address
+                rejectUnauthorized: false
             },
             connectionTimeout: 60000, // 60 seconds
             greetingTimeout: 30000,
