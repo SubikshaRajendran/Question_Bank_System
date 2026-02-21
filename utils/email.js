@@ -6,7 +6,7 @@ const sendOTPEmail = async (email, otp) => {
             method: "POST",
             headers: {
                 "accept": "application/json",
-                "api-key": process.env.BREVO_API_KEY,
+                "api-key": process.env.BREVO_API_KEY ? process.env.BREVO_API_KEY.trim() : "",
                 "content-type": "application/json"
             },
             body: JSON.stringify({

@@ -1780,6 +1780,7 @@ h2,
     transform: translateY(0);
   }
 }
+
 /* Student Activity Redesign */
 .student-row-card:hover {
   transform: translateY(-2px);
@@ -1787,3 +1788,72 @@ h2,
   border-color: var(--primary-color);
 }
 
+/* Login Header Icon */
+.login-header-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.login-header-wrapper h2 {
+  margin: 0 !important;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.login-header-icon {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--primary-gradient);
+  color: white;
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+  animation: float-icon 4s ease-in-out infinite;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-header-icon:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 8px 15px rgba(79, 70, 229, 0.5);
+  animation: none;
+}
+
+.icon-base-user {
+  position: relative;
+  z-index: 1;
+  margin-top: 6px;
+}
+
+.icon-accent-cap {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  z-index: 2;
+  color: #fbbf24;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  transform: rotate(15deg);
+}
+
+@keyframes float-icon {
+  0% {
+    transform: translateY(0px);
+    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+  }
+
+  50% {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(79, 70, 229, 0.4);
+  }
+
+  100% {
+    transform: translateY(0px);
+    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+  }
+}

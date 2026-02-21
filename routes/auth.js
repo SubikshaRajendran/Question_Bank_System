@@ -117,6 +117,10 @@ router.post('/student/login', async (req, res) => {
             return res.status(401).json({ success: false, message: 'Account not verified. Please complete registration.' });
         }
 
+        if (user.isBlocked) {
+            return res.status(403).json({ success: false, message: 'Your account has been blocked. Please contact the administrator.' });
+        }
+
         // Verify Password
         const isMatch = await bcrypt.compare(password, user.password);
 

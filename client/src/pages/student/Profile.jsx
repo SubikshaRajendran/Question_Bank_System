@@ -21,20 +21,21 @@ const StudentProfile = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [accountError, setAccountError] = useState('');
 
-    // Profile Details State
     const [fullName, setFullName] = useState('');
     const [department, setDepartment] = useState('');
+    const [rollNumber, setRollNumber] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [profilePicFile, setProfilePicFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState('');
 
-    const isProfileComplete = user?.fullName && user?.department && user?.phoneNumber && user?.profilePicture;
+    const isProfileComplete = user?.fullName && user?.department && user?.rollNumber && user?.phoneNumber && user?.profilePicture;
 
     useEffect(() => {
         if (user) {
             setUsername(user.username || '');
             setFullName(user.fullName || '');
             setDepartment(user.department || '');
+            setRollNumber(user.rollNumber || '');
             setPhoneNumber(user.phoneNumber || '');
             setPreviewUrl(user.profilePicture || '');
         }
@@ -87,6 +88,7 @@ const StudentProfile = () => {
         const formData = new FormData();
         formData.append('fullName', fullName);
         formData.append('department', department);
+        formData.append('rollNumber', rollNumber);
         formData.append('phoneNumber', phoneNumber);
         if (profilePicFile) {
             formData.append('profilePicture', profilePicFile);
@@ -259,7 +261,17 @@ const StudentProfile = () => {
                                     style={{ width: '100%', cursor: isProfileEditing ? 'text' : 'default', backgroundColor: isProfileEditing ? 'var(--bg-color)' : 'var(--bg-secondary)' }}
                                 />
                             </div>
-                            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                            <div className="form-group">
+                                <label>Roll Number</label>
+                                <input
+                                    type="text"
+                                    value={rollNumber}
+                                    onChange={(e) => setRollNumber(e.target.value)}
+                                    disabled={!isProfileEditing}
+                                    style={{ width: '100%', cursor: isProfileEditing ? 'text' : 'default', backgroundColor: isProfileEditing ? 'var(--bg-color)' : 'var(--bg-secondary)' }}
+                                />
+                            </div>
+                            <div className="form-group">
                                 <label>Phone Number</label>
                                 <input
                                     type="tel"

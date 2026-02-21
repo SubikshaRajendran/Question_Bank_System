@@ -51,6 +51,68 @@ router.get('/', async (req, res) => {
     }
 });
 
+// Admin Route: Get all students for Students Management Page (Sorted A-Z)
+router.get('/admin/students', async (req, res) => {
+    try {
+        // Find all students, selecting only the necessary fields
+        const students = await User.find({ role: 'student' })
+            .select('username email department isBlocked createdAt lastLogin isVerified isOnline profilePicture fullName phoneNumber rollNumber')
+            // Sort case-insensitively by username A-Z
+            .collation({ locale: 'en' })
+            .sort({ username: 1 });
+
+        res.json(students);
+    } catch (err) {
+        console.error('Error fetching students for admin:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin Route: Get single student by ID
+router.get('/admin/student/:id', async (req, res) => {
+    try {
+        const student = await User.findById(req.params.id)
+            .select('username email department isBlocked createdAt lastLogin isVerified isOnline profilePicture fullName phoneNumber rollNumber');
+
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+        res.json(student);
+    } catch (err) {
+        console.error('Error fetching student for admin:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin Route: Toggle Block/Unblock Student
+router.put('/admin/student/:id/block', async (req, res) => {
+    try {
+        const { isBlocked } = req.body;
+        const student = await User.findById(req.params.id);
+
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+
+        if (student.role !== 'student') {
+            return res.status(403).json({ success: false, message: 'Cannot block non-students' });
+        }
+
+        student.isBlocked = isBlocked;
+
+        // If blocking, optionally log them out (reset isOnline)
+        if (isBlocked) {
+            student.isOnline = false;
+        }
+
+        await student.save();
+        res.json({ success: true, message: `Student ${isBlocked ? 'blocked' : 'unblocked'} successfully`, student });
+    } catch (err) {
+        console.error('Error blocking/unblocking student:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 // Register a course
 router.post('/:id/register-course', async (req, res) => {
     try {
@@ -239,7 +301,7 @@ router.post('/:id/verify-password', async (req, res) => {
 // Update Profile (with image upload)
 router.put('/:id/profile', upload.single('profilePicture'), async (req, res) => {
     try {
-        const { username, newPassword, fullName, department, phoneNumber } = req.body;
+        const { username, newPassword, fullName, department, rollNumber, phoneNumber } = req.body;
         const user = await User.findById(req.params.id);
 
         if (!user) return res.status(404).json({ message: 'User not found' });
@@ -258,9 +320,9 @@ router.put('/:id/profile', upload.single('profilePicture'), async (req, res) => 
         }
 
         // Update Details
-        // Update Details
         if (fullName !== undefined) user.fullName = fullName;
         if (department !== undefined) user.department = department;
+        if (rollNumber !== undefined) user.rollNumber = rollNumber;
         if (phoneNumber !== undefined) user.phoneNumber = phoneNumber;
 
         // Handle Image Upload

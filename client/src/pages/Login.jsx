@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { fetchApi } from '../utils/api';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, AlertTriangle, GraduationCap, User } from 'lucide-react';
 
 const Login = ({ mode }) => {
     const [email, setEmail] = useState('');
@@ -13,6 +13,9 @@ const Login = ({ mode }) => {
     const [loading, setLoading] = useState(false);
     const [shake, setShake] = useState(false);
 
+    const [failedAttempts, setFailedAttempts] = useState(0);
+    const [lockoutUntil, setLockoutUntil] = useState(null);
+
     const { login } = useAuth();
     const navigate = useNavigate();
 
@@ -21,20 +24,50 @@ const Login = ({ mode }) => {
     const endpoint = isStudent ? '/auth/student/login' : '/auth/admin/login';
     const redirectPath = isStudent ? '/student/dashboard' : '/admin/dashboard';
 
+    useEffect(() => {
+        if (isStudent) {
+            const storedFails = parseInt(localStorage.getItem('failedLoginAttempts') || '0');
+            const storedLockout = parseInt(localStorage.getItem('loginLockoutUntil') || '0');
+
+            if (storedLockout > Date.now()) {
+                setLockoutUntil(storedLockout);
+                setFailedAttempts(storedFails);
+            } else if (storedLockout > 0) {
+                localStorage.removeItem('failedLoginAttempts');
+                localStorage.removeItem('loginLockoutUntil');
+                setFailedAttempts(0);
+                setLockoutUntil(null);
+            } else {
+                setFailedAttempts(storedFails);
+            }
+        }
+    }, [isStudent]);
+
+    useEffect(() => {
+        let timer;
+        if (lockoutUntil && lockoutUntil > Date.now()) {
+            timer = setInterval(() => {
+                if (Date.now() > lockoutUntil) {
+                    setLockoutUntil(null);
+                    setFailedAttempts(0);
+                    localStorage.removeItem('failedLoginAttempts');
+                    localStorage.removeItem('loginLockoutUntil');
+                    clearInterval(timer);
+                }
+            }, 1000);
+        }
+        return () => clearInterval(timer);
+    }, [lockoutUntil]);
+
+    const isLockedOut = lockoutUntil && lockoutUntil > Date.now();
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (isLockedOut) return;
+
         setError('');
         setLoading(true);
         setShake(false);
-
-        // Domain Validation for Students - REMOVED
-        // if (isStudent && !email.endsWith('@bitsathy.ac.in')) {
-        //     setError('Only @bitsathy.ac.in emails are allowed');
-        //     setShake(true);
-        //     setTimeout(() => setShake(false), 500);
-        //     setLoading(false);
-        //     return;
-        // }
 
         try {
             const data = await fetchApi(endpoint, {
@@ -43,116 +76,168 @@ const Login = ({ mode }) => {
             });
 
             if (data.success) {
+                if (isStudent) {
+                    localStorage.removeItem('failedLoginAttempts');
+                    localStorage.removeItem('loginLockoutUntil');
+                }
                 login(data.user, isStudent ? 'student' : 'admin');
                 navigate(redirectPath);
             } else {
                 throw new Error(data.message || 'Login failed');
             }
         } catch (err) {
-            setError(err.message || 'Invalid credentials');
+            const errorMsg = err.message || 'Invalid credentials';
+            setError(errorMsg);
             setShake(true);
             setTimeout(() => setShake(false), 500);
+
+            if (isStudent) {
+                const newFails = failedAttempts + 1;
+                setFailedAttempts(newFails);
+                localStorage.setItem('failedLoginAttempts', newFails.toString());
+
+                if (newFails >= 5) {
+                    const lockTime = Date.now() + 5 * 60 * 1000;
+                    setLockoutUntil(lockTime);
+                    localStorage.setItem('loginLockoutUntil', lockTime.toString());
+                }
+            }
+        } finally {
             setLoading(false);
         }
     };
 
-    return (
-        <div className="container" style={{ maxWidth: '400px', marginTop: '4rem' }}>
-            <div className={`card ${shake ? 'shake' : ''}`}>
-                <h2 style={{ textAlign: 'center', marginBottom: '1.5rem' }}>{title}</h2>
-
-                <form onSubmit={handleSubmit}>
-                    {/* Username Field - Only for Admin */}
-                    {!isStudent && (
-                        <div className="form-group">
-                            <label htmlFor="username">Username</label>
-                            <input
-                                type="text"
-                                id="username"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                required
-                                placeholder="Enter username"
-                                disabled={loading}
-                                autoComplete="username"
-                            />
-                        </div>
-                    )}
-
-                    {/* Email Field - Only for Student */}
-                    {isStudent && (
-                        <div className="form-group">
-                            <label htmlFor="email">Email</label>
-                            <input
-                                type="email"
-                                id="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                placeholder="Enter student email"
-                                disabled={loading}
-                                autoComplete="email"
-                            />
-                        </div>
-                    )}
-
-                    <div className="form-group">
-                        <label htmlFor="password">Password</label>
-                        <div className="password-wrapper">
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                id="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                placeholder="Enter password"
-                                disabled={loading}
-                            />
-                            <button
-                                type="button"
-                                className="password-toggle"
-                                onClick={() => setShowPassword(!showPassword)}
-                                tabIndex="-1"
-                            >
-                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                            </button>
-                        </div>
+    const renderLoginForm = () => (
+        <div className={`card ${shake ? 'shake' : ''}`}>
+            <div className="login-header-wrapper">
+                {isStudent && (
+                    <div className="login-header-icon">
+                        <GraduationCap size={20} className="icon-accent-cap" />
+                        <User size={22} className="icon-base-user" />
                     </div>
+                )}
+                <h2 style={{ margin: 0 }}>{title}</h2>
+            </div>
 
-                    <button
-                        type="submit"
-                        className="btn"
-                        style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-                        disabled={loading}
-                    >
-                        {loading ? (
-                            <>
-                                <span className="spinner"></span> Logging in...
-                            </>
-                        ) : (
-                            'Login'
-                        )}
-                    </button>
-                </form>
+            {isLockedOut && (
+                <div style={{
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid var(--danger)',
+                    padding: '1rem',
+                    borderRadius: '0.5rem',
+                    marginBottom: '1.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    color: 'var(--danger)'
+                }}>
+                    <AlertTriangle size={24} style={{ flexShrink: 0 }} />
+                    <span style={{ fontSize: '0.9rem', fontWeight: 500, lineHeight: 1.4 }}>
+                        Too many failed login attempts. Please try again after 5 minutes.
+                    </span>
+                </div>
+            )}
 
-                {error && (
-                    <div className="error-message" style={{ color: 'var(--danger)', marginTop: '1rem', textAlign: 'center', fontWeight: 500 }}>
-                        {error}
+            <form onSubmit={handleSubmit}>
+                {!isStudent && (
+                    <div className="form-group">
+                        <label htmlFor="username">Username</label>
+                        <input
+                            type="text"
+                            id="username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            required
+                            placeholder="Enter username"
+                            disabled={loading || isLockedOut}
+                            autoComplete="username"
+                        />
                     </div>
                 )}
 
                 {isStudent && (
-                    <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-                        <Link to="/forgot-password" style={{ color: 'var(--primary-color)', fontSize: '0.9rem', display: 'block', marginBottom: '1rem' }}>
+                    <div className="form-group">
+                        <label htmlFor="email">Email address</label>
+                        <input
+                            type="email"
+                            id="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            placeholder="Enter student email"
+                            disabled={loading || isLockedOut}
+                            autoComplete="email"
+                        />
+                    </div>
+                )}
+
+                <div className="form-group">
+                    <label htmlFor="password">Password</label>
+                    <div className="password-wrapper">
+                        <input
+                            type={showPassword ? 'text' : 'password'}
+                            id="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            placeholder="Enter password"
+                            disabled={loading || isLockedOut}
+                        />
+                        <button
+                            type="button"
+                            className="password-toggle"
+                            onClick={() => setShowPassword(!showPassword)}
+                            tabIndex="-1"
+                        >
+                            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                    </div>
+                </div>
+
+                {isStudent && (
+                    <div style={{ textAlign: 'right', marginBottom: '1.5rem' }}>
+                        <Link to="/forgot-password" style={{ color: 'var(--primary-color)', fontSize: '0.9rem', fontWeight: 500 }}>
                             Forgot Password?
-                        </Link>
-                        <span style={{ color: 'var(--text-secondary)' }}>New user? </span>
-                        <Link to="/register" style={{ color: 'var(--primary-color)', fontWeight: 500 }}>
-                            Register
                         </Link>
                     </div>
                 )}
-            </div>
+
+                <button
+                    type="submit"
+                    className="btn"
+                    style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', opacity: isLockedOut ? 0.6 : 1 }}
+                    disabled={loading || isLockedOut}
+                >
+                    {loading ? (
+                        <>
+                            <span className="spinner" style={{ marginRight: '8px' }}></span> Logging in...
+                        </>
+                    ) : (
+                        'Login'
+                    )}
+                </button>
+            </form>
+
+            {error && !isLockedOut && (
+                <div className="error-message" style={{ color: 'var(--danger)', marginTop: '1rem', textAlign: 'center', fontWeight: 500 }}>
+                    {error}
+                </div>
+            )}
+
+            {isStudent && (
+                <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>New user? </span>
+                    <Link to="/register" style={{ color: 'var(--primary-color)', fontWeight: 500 }}>
+                        Register
+                    </Link>
+                </div>
+            )}
+        </div>
+    );
+
+    return (
+        <div className="container" style={{ maxWidth: '400px', marginTop: '4rem' }}>
+            {renderLoginForm()}
         </div>
     );
 };

@@ -7,6 +7,7 @@ const UserSchema = new mongoose.Schema({
     role: { type: String, enum: ['student', 'admin'], default: 'student' },
     fullName: { type: String }, // For Student Profile
     department: { type: String },
+    rollNumber: { type: String },
     phoneNumber: { type: String },
     profilePicture: { type: String }, // URL to uploaded image
     password: { type: String, required: true },
@@ -20,7 +21,8 @@ const UserSchema = new mongoose.Schema({
     otp: { type: String },
     otpExpires: { type: Date },
     resetPasswordOtp: { type: String },
-    resetPasswordOtpExpires: { type: Date }
+    resetPasswordOtpExpires: { type: Date },
+    isBlocked: { type: Boolean, default: false }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema);
