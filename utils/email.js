@@ -1,27 +1,27 @@
 const nodemailer = require('nodemailer');
+const dns = require("dns");
+dns.setDefaultResultOrder("ipv4first");
 
 const sendOTPEmail = async (email, otp) => {
-    // Ensure environment variables are used for production
-    const user = process.env.EMAIL_USER;
-    const pass = process.env.EMAIL_PASS;
-
     try {
         const transporter = nodemailer.createTransport({
             host: "smtp.gmail.com",
             port: 465,
             secure: true,
             auth: {
-                user: user,
-                pass: pass
-            }
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            },
+            family: 4,
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 10000
         });
 
-        // Verify connection configuration before sending
-        await transporter.verify();
-        console.log("SMTP Server is ready to take our messages");
+        console.log("Sending OTP to:", email);
 
         const mailOptions = {
-            from: user,
+            from: process.env.EMAIL_USER,
             to: email,
             subject: 'Question Bank System - OTP Verification',
             text: `Your OTP for login is: ${otp}\n\nThis OTP is valid for 10 minutes.`,
@@ -34,7 +34,7 @@ const sendOTPEmail = async (email, otp) => {
         };
 
         const info = await transporter.sendMail(mailOptions);
-        console.log(`OTP sent successfully to ${email}. Message ID: ${info.messageId}`);
+        console.log("OTP sent successfully");
         return { success: true };
     } catch (error) {
         console.error('Failed to send OTP email:', error.message || error);
