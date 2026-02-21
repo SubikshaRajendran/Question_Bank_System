@@ -1,37 +1,24 @@
 const nodemailer = require('nodemailer');
 
-const dns = require('dns');
-
 const sendOTPEmail = async (email, otp) => {
-    // Check if credentials exist
-    const user = process.env.MAIL_USER;
-    const pass = process.env.MAIL_PASS;
-
-    if (!user || !pass) {
-        console.log('==================================================');
-        console.log(`[DEV MODE] OTP for ${email}: ${otp}`);
-        console.log('==================================================');
-        return { success: true };
-    }
+    // Ensure environment variables are used for production
+    const user = process.env.EMAIL_USER;
+    const pass = process.env.EMAIL_PASS;
 
     try {
-        // Use standard Gmail configuration with port 465 and secure connection
-        // This is more reliable on cloud platforms like Render
         const transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
+            host: "smtp.gmail.com",
             port: 465,
-            secure: true, // Use SSL/TLS
+            secure: true,
             auth: {
                 user: user,
                 pass: pass
-            },
-            tls: {
-                rejectUnauthorized: false
-            },
-            connectionTimeout: 60000, // 60 seconds
-            greetingTimeout: 30000,
-            socketTimeout: 60000,
+            }
         });
+
+        // Verify connection configuration before sending
+        await transporter.verify();
+        console.log("SMTP Server is ready to take our messages");
 
         const mailOptions = {
             from: user,
@@ -46,12 +33,12 @@ const sendOTPEmail = async (email, otp) => {
                    </div>`
         };
 
-        await transporter.sendMail(mailOptions);
-        console.log(`OTP sent to ${email}`);
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`OTP sent successfully to ${email}. Message ID: ${info.messageId}`);
         return { success: true };
     } catch (error) {
-        console.error('Error sending OTP email:', error);
-        return { success: false, error: error.message || error };
+        console.error('Failed to send OTP email:', error.message || error);
+        return { success: false, error: 'Failed to send OTP email: ' + (error.message || 'Connection timeout or other error') };
     }
 };
 

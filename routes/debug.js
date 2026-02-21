@@ -50,11 +50,13 @@ async function handleDebugEmail(req, res) {
     }
 
     try {
-        debugInfo.resolvedIp = 'smtp.gmail.com';
-        debugInfo.resolvedFamily = 'N/A';
+        // Force IPv4 resolution to prevent ENETUNREACH IPv6 errors on Render
+        const { address, family } = await dns.promises.lookup('smtp.gmail.com', { family: 4 });
+        debugInfo.resolvedIp = address;
+        debugInfo.resolvedFamily = family;
 
         const transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
+            host: address,
             port: 465,
             secure: true, // Use SSL/TLS
             auth: {
@@ -62,7 +64,8 @@ async function handleDebugEmail(req, res) {
                 pass: pass
             },
             tls: {
-                rejectUnauthorized: false
+                rejectUnauthorized: false,
+                servername: 'smtp.gmail.com' // Required when using IP address for host
             },
             connectionTimeout: 60000,
             greetingTimeout: 30000,
