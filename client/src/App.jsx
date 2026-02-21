@@ -9,6 +9,7 @@ import About from './pages/About';
 import LoginSelection from './pages/LoginSelection';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 
 import StudentDashboard from './pages/student/Dashboard';
 import MyCourses from './pages/student/MyCourses';
@@ -36,6 +37,7 @@ function App() {
             <Route path="login/student" element={<Login mode="student" />} />
             <Route path="login/admin" element={<Login mode="admin" />} />
             <Route path="register" element={<Register />} />
+            <Route path="forgot-password" element={<ForgotPassword />} />
 
             {/* Student Routes */}
             <Route element={<ProtectedRoute allowedRoles={['student']} />}>

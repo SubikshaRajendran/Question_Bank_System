@@ -18,7 +18,9 @@ const UserSchema = new mongoose.Schema({
     readQuestions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }], // Track individual question progress
     isVerified: { type: Boolean, default: false }, // OTP Verification status
     otp: { type: String },
-    otpExpires: { type: Date }
+    otpExpires: { type: Date },
+    resetPasswordOtp: { type: String },
+    resetPasswordOtpExpires: { type: Date }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema);

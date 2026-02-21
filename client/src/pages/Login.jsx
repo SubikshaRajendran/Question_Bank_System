@@ -143,6 +143,9 @@ const Login = ({ mode }) => {
 
                 {isStudent && (
                     <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+                        <Link to="/forgot-password" style={{ color: 'var(--primary-color)', fontSize: '0.9rem', display: 'block', marginBottom: '1rem' }}>
+                            Forgot Password?
+                        </Link>
                         <span style={{ color: 'var(--text-secondary)' }}>New user? </span>
                         <Link to="/register" style={{ color: 'var(--primary-color)', fontWeight: 500 }}>
                             Register

@@ -322,6 +322,93 @@ router.post('/student/verify-otp', async (req, res) => {
     }
 });
 
+// Forgot Password - Send OTP
+router.post('/student/forgot-password', async (req, res) => {
+    try {
+        let { email } = req.body;
+        if (!email) return res.status(400).json({ success: false, message: 'Email required' });
+
+        email = email.trim().toLowerCase();
+
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            // Even if user not found, don't expose it to avoid email enumeration, but here requirements say to show error
+            return res.status(400).json({ success: false, message: 'Email not found' });
+        }
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
+        user.resetPasswordOtp = otp;
+        user.resetPasswordOtpExpires = otpExpires;
+        await user.save();
+
+        const emailResult = await sendOTPEmail(email, otp);
+        if (!emailResult.success) {
+            return res.status(500).json({ success: false, message: 'Failed to send OTP email' });
+        }
+
+        res.json({ success: true, message: 'OTP sent to email for password reset' });
+
+    } catch (err) {
+        console.error('Forgot Password Error:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Reset Password - Verify OTP & Update Password
+router.post('/student/reset-password', async (req, res) => {
+    try {
+        let { email, otp, newPassword } = req.body;
+        if (!email || !otp || !newPassword) {
+            return res.status(400).json({ success: false, message: 'All fields required' });
+        }
+
+        email = email.trim().toLowerCase();
+
+        if (newPassword.length < 4) {
+            return res.status(400).json({ success: false, message: 'Password too short (min 4 chars)' });
+        }
+
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(400).json({ success: false, message: 'User not found' });
+        }
+
+        if (!user.resetPasswordOtp || !user.resetPasswordOtpExpires) {
+            return res.status(400).json({ success: false, message: 'No reset request found for this email' });
+        }
+
+        if (user.resetPasswordOtp !== otp) {
+            return res.status(400).json({ success: false, message: 'Invalid OTP' });
+        }
+
+        if (user.resetPasswordOtpExpires < new Date()) {
+            return res.status(400).json({ success: false, message: 'OTP expired' });
+        }
+
+        // OTP Valid - Update password
+        user.password = await bcrypt.hash(newPassword, 10);
+        user.resetPasswordOtp = undefined;
+        user.resetPasswordOtpExpires = undefined;
+
+        // Let's also verify their account if they weren't somehow
+        if (!user.isVerified) {
+            user.isVerified = true;
+        }
+
+        await user.save();
+
+        res.json({ success: true, message: 'Password reset successful. Please login.' });
+
+    } catch (err) {
+        console.error('Reset Password Error:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 // Resend OTP
 router.post('/student/resend-otp', async (req, res) => {
     try {
