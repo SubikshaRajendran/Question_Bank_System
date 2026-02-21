@@ -5,14 +5,13 @@ dns.setDefaultResultOrder("ipv4first");
 const sendOTPEmail = async (email, otp) => {
     try {
         const transporter = nodemailer.createTransport({
-            host: "smtp.gmail.com",
-            port: 465,
-            secure: true,
+            host: "smtp-relay.brevo.com",
+            port: 587,
+            secure: false, // Brevo uses TLS/STARTTLS on 587
             auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
+                user: process.env.BREVO_SMTP_USER,
+                pass: process.env.BREVO_SMTP_PASS
             },
-            family: 4,
             connectionTimeout: 10000,
             greetingTimeout: 10000,
             socketTimeout: 10000
@@ -21,7 +20,7 @@ const sendOTPEmail = async (email, otp) => {
         console.log("Sending OTP to:", email);
 
         const mailOptions = {
-            from: process.env.EMAIL_USER,
+            from: process.env.BREVO_SMTP_USER,
             to: email,
             subject: 'Question Bank System - OTP Verification',
             text: `Your OTP for login is: ${otp}\n\nThis OTP is valid for 10 minutes.`,
@@ -34,7 +33,7 @@ const sendOTPEmail = async (email, otp) => {
         };
 
         const info = await transporter.sendMail(mailOptions);
-        console.log("OTP sent successfully");
+        console.log("OTP sent successfully. Message ID:", info.messageId);
         return { success: true };
     } catch (error) {
         console.error('Failed to send OTP email:', error.message || error);
