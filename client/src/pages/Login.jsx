@@ -87,6 +87,13 @@ const Login = ({ mode }) => {
             }
         } catch (err) {
             const errorMsg = err.message || 'Invalid credentials';
+
+            // Check if account is blocked and redirect
+            if (errorMsg.toLowerCase().includes('account has been blocked')) {
+                navigate('/account-blocked');
+                return;
+            }
+
             setError(errorMsg);
             setShake(true);
             setTimeout(() => setShake(false), 500);

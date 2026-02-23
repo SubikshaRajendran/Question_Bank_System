@@ -171,13 +171,35 @@ const Students = () => {
                                         </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        {student.isBlocked && (
+                                            <span style={{
+                                                fontSize: '0.85rem',
+                                                fontWeight: '600',
+                                                color: 'var(--danger)'
+                                            }}>
+                                                Blocked
+                                            </span>
+                                        )}
                                         <button
                                             onClick={() => openDetailsPage(student._id)}
-                                            className="btn-icon-soft"
                                             title="View Profile"
+                                            style={{
+                                                color: student.isBlocked ? 'var(--danger)' : '#10b981',
+                                                background: 'transparent',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                padding: '0.2rem',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                transition: 'opacity 0.2s',
+                                                opacity: 0.8
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                                            onMouseLeave={(e) => e.currentTarget.style.opacity = 0.8}
                                         >
-                                            <Eye size={18} />
+                                            <Eye size={22} />
                                         </button>
                                     </div>
                                 </div>

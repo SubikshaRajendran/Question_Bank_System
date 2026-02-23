@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { fetchApi } from '../../utils/api';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Plus, X, MessageCircleQuestion, MessageSquare } from 'lucide-react';
 
 const StudentComments = () => {
@@ -11,11 +11,38 @@ const StudentComments = () => {
     const [showModal, setShowModal] = useState(false);
     const [newComment, setNewComment] = useState('');
     const [submitting, setSubmitting] = useState(false);
-    const [activeTab, setActiveTab] = useState('questions'); // 'questions' | 'general'
+    const location = useLocation();
+
+    // Initialize activeTab from location state if available, else 'questions'
+    const [activeTab, setActiveTab] = useState(location.state?.tab || 'questions');
 
     useEffect(() => {
         loadComments();
     }, [user]);
+
+    // Update activeTab if location state changes
+    useEffect(() => {
+        if (location.state?.tab && location.state.tab !== activeTab) {
+            setActiveTab(location.state.tab);
+        }
+    }, [location.state?.tab]);
+
+    // Handle highlighting specific comment
+    useEffect(() => {
+        if (!loading && comments.length > 0 && location.state?.highlightComment) {
+            setTimeout(() => {
+                const el = document.getElementById(`comment-${location.state.highlightComment}`);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.style.transition = 'background-color 0.5s';
+                    el.style.backgroundColor = 'rgba(79, 70, 229, 0.1)';
+                    setTimeout(() => {
+                        el.style.backgroundColor = '';
+                    }, 2000);
+                }
+            }, 100);
+        }
+    }, [loading, comments, location.state?.highlightComment, activeTab]);
 
     const loadComments = async () => {
         if (!user) return;
@@ -121,7 +148,7 @@ const StudentComments = () => {
                     ) : (
                         <div className="student-grid">
                             {questionDoubts.map(c => (
-                                <div key={c._id} className="bento-box" style={{ display: 'block' }}>
+                                <div id={`comment-${c._id}`} key={c._id} className="bento-box" style={{ display: 'block' }}>
                                     <div style={{ marginBottom: '1rem' }}>
                                         <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
                                             <span>{new Date(c.createdAt).toLocaleDateString()}</span>
@@ -182,7 +209,7 @@ const StudentComments = () => {
                     ) : (
                         <div className="student-grid">
                             {generalComments.map(c => (
-                                <div key={c._id} className="bento-box" style={{ display: 'block' }}>
+                                <div id={`comment-${c._id}`} key={c._id} className="bento-box" style={{ display: 'block' }}>
                                     <div style={{ marginBottom: '1rem' }}>
                                         <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
                                             <span>{new Date(c.createdAt).toLocaleDateString()}</span>

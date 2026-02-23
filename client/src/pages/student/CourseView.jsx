@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { fetchApi } from '../../utils/api';
 import { Check, Flag, Trophy, Star, LayoutGrid, Eye, Clock } from 'lucide-react';
@@ -10,6 +10,7 @@ const CourseView = () => {
     const { id } = useParams();
     const { user } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [course, setCourse] = useState(null);
     const [questions, setQuestions] = useState([]);
@@ -57,6 +58,37 @@ const CourseView = () => {
             alert('Failed to submit comment');
         }
     };
+
+    useEffect(() => {
+        if (!loading && questions.length > 0) {
+            let targetId = null;
+
+            if (location.state?.openCommentFor) {
+                targetId = location.state.openCommentFor;
+                setCommentingQId(targetId);
+            } else if (location.state?.highlightComment) {
+                targetId = location.state.highlightComment;
+            }
+
+            if (targetId) {
+                setTimeout(() => {
+                    const el = document.getElementById(targetId);
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        el.style.transition = 'box-shadow 0.5s';
+                        el.style.boxShadow = '0 0 0 3px var(--primary-color)';
+
+                        setTimeout(() => {
+                            el.style.boxShadow = '';
+                        }, 2500);
+                    }
+                }, 300);
+
+                // Clean up the location state so it doesn't re-trigger
+                navigate(location.pathname + location.hash, { replace: true, state: {} });
+            }
+        }
+    }, [loading, questions, location.state, navigate]);
 
     useEffect(() => {
         const loadData = async () => {

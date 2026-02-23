@@ -3,6 +3,8 @@ const router = express.Router();
 const Course = require('../models/Course');
 const Question = require('../models/Question');
 const Comment = require('../models/Comment');
+const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 const multer = require('multer');
 const path = require('path');
@@ -172,7 +174,8 @@ router.post('/:id/questions', async (req, res) => {
             text
         });
         await newQuestion.save();
-        await Course.findByIdAndUpdate(req.params.id, { $push: { questions: newQuestion._id } });
+        const course = await Course.findByIdAndUpdate(req.params.id, { $push: { questions: newQuestion._id } });
+
         res.json(newQuestion);
     } catch (err) {
         res.status(400).json({ error: err.message });

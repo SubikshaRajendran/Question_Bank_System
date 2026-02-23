@@ -2,12 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { fetchApi } from '../../utils/api';
 import CourseCard from '../../components/CourseCard';
-import { Search, Filter, User } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Search, Filter, User, Bell } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const StudentDashboard = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [courses, setCourses] = useState([]);
+    const [notifications, setNotifications] = useState([]);
+    const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
+    const notifDropdownRef = useRef(null);
     const [filteredCourses, setFilteredCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -22,6 +26,9 @@ const StudentDashboard = () => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setIsDropdownOpen(false);
+            }
+            if (notifDropdownRef.current && !notifDropdownRef.current.contains(event.target)) {
+                setIsNotifDropdownOpen(false);
             }
         };
 
@@ -38,6 +45,9 @@ const StudentDashboard = () => {
                 const data = await fetchApi(`/users/${user._id}/dashboard-data`);
                 setCourses(data.allCourses || []);
                 setFilteredCourses(data.allCourses || []);
+
+                const notifs = await fetchApi(`/notifications/user/${user._id}`);
+                setNotifications(notifs);
             } catch (err) {
                 console.error("Failed to load dashboard data", err);
             } finally {
@@ -69,6 +79,41 @@ const StudentDashboard = () => {
 
         setFilteredCourses(result);
     }, [searchTerm, difficultyFilter, departmentFilter, courses]);
+
+    const handleNotificationClick = async (notif) => {
+        try {
+            await fetchApi(`/notifications/${notif._id}/read`, { method: 'PUT' });
+            setNotifications(notifications.filter(n => n._id !== notif._id));
+            setIsNotifDropdownOpen(false);
+
+            if (notif.type === 'reply') {
+                const comment = notif.commentId;
+                if (comment && comment.type === 'question') {
+                    // Redirect to the Student Comments page on the 'questions' tab
+                    navigate('/student/comments', {
+                        state: { tab: 'questions', highlightComment: comment._id }
+                    });
+                } else if (comment && comment.type === 'general') {
+                    // Redirect to the Student Comments page on the 'general' tab
+                    navigate('/student/comments', {
+                        state: { tab: 'general', highlightComment: comment._id }
+                    });
+                } else {
+                    navigate('/student/comments');
+                }
+            } else if (notif.type === 'new_question' && notif.courseId) {
+                if (notif.questionId) {
+                    navigate(`/course/${notif.courseId._id}#${notif.questionId}`, {
+                        state: { highlightComment: notif.questionId }
+                    });
+                } else {
+                    navigate(`/course/${notif.courseId._id}`);
+                }
+            }
+        } catch (error) {
+            console.error("Error marking notification read", error);
+        }
+    };
 
     if (loading) {
         return <div className="container" style={{ textAlign: 'center', marginTop: '4rem' }}>Loading courses...</div>;
@@ -138,6 +183,63 @@ const StudentDashboard = () => {
                         )}
                     </div>
                     <h2 style={{ margin: 0 }}>Learning Dashboard</h2>
+
+                    {/* Notification Icon */}
+                    <div style={{ position: 'relative', marginLeft: '1rem' }} ref={notifDropdownRef}>
+                        <button
+                            className="btn btn-secondary"
+                            onClick={() => setIsNotifDropdownOpen(!isNotifDropdownOpen)}
+                            style={{ position: 'relative', padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            title="Notifications"
+                        >
+                            <Bell size={24} />
+                            {notifications.length > 0 && (
+                                <span style={{
+                                    position: 'absolute', top: '-5px', right: '-5px',
+                                    background: 'var(--danger)', color: 'white', borderRadius: '50%',
+                                    width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: '0.75rem', fontWeight: 'bold'
+                                }}>
+                                    {notifications.length}
+                                </span>
+                            )}
+                        </button>
+
+                        {isNotifDropdownOpen && (
+                            <div style={{
+                                position: 'absolute', top: '110%', left: 0,
+                                background: 'var(--card-bg)', border: '1px solid var(--border-color)',
+                                borderRadius: '8px', padding: '0.5rem', minWidth: '300px',
+                                boxShadow: '0 4px 6px rgba(0,0,0,0.1)', zIndex: 1000
+                            }}>
+                                <h4 style={{ margin: '0 0 0.5rem 0', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Notifications</h4>
+                                {notifications.length > 0 ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '300px', overflowY: 'auto' }}>
+                                        {notifications.map(notif => (
+                                            <div
+                                                key={notif._id}
+                                                onClick={() => handleNotificationClick(notif)}
+                                                style={{
+                                                    padding: '0.75rem', background: 'var(--bg-secondary)',
+                                                    borderRadius: '4px', cursor: 'pointer', transition: 'background 0.2s',
+                                                    fontSize: '0.9rem'
+                                                }}
+                                                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-color)'}
+                                                onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                                            >
+                                                <strong>{notif.message}</strong>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                                                    {new Date(notif.createdAt).toLocaleDateString()}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p style={{ margin: 0, padding: '0.5rem', color: 'var(--text-secondary)', textAlign: 'center', fontSize: '0.9rem' }}>No new notifications</p>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 

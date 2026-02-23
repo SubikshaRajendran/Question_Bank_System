@@ -7,7 +7,8 @@ const CommentSchema = new mongoose.Schema({
     type: { type: String, enum: ['question', 'general'], default: 'question' },
     text: { type: String, required: true },
     reply: { type: String, default: '' },
-    isResolved: { type: Boolean, default: false }
+    isResolved: { type: Boolean, default: false },
+    isAdminRead: { type: Boolean, default: false }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Comment', CommentSchema);

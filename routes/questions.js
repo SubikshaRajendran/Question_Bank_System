@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const Question = require('../models/Question');
 const Course = require('../models/Course');
+const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 // Get all questions (optionally filter by course)
 router.get('/', async (req, res) => {
@@ -33,7 +35,22 @@ router.post('/bulk-create', async (req, res) => {
         const insertedQuestions = await Question.insertMany(questionDocs);
         const insertedIds = insertedQuestions.map(q => q._id);
 
-        await Course.findByIdAndUpdate(courseId, { $push: { questions: { $each: insertedIds } } });
+        const course = await Course.findByIdAndUpdate(courseId, { $push: { questions: { $each: insertedIds } } });
+
+        // Notify enrolled students
+        const enrolledStudents = await User.find({ registeredCourses: courseId });
+        if (enrolledStudents.length > 0 && course) {
+            const notifications = enrolledStudents.flatMap(student =>
+                insertedQuestions.map(q => ({
+                    userId: student._id,
+                    type: 'new_question',
+                    message: `New question in ${course.title}`,
+                    courseId: course._id,
+                    questionId: q._id
+                }))
+            );
+            await Notification.insertMany(notifications);
+        }
 
         res.json(insertedQuestions);
     } catch (err) {
@@ -49,7 +66,20 @@ router.post('/', async (req, res) => {
         await newQuestion.save();
 
         // Add to course's question list
-        await Course.findByIdAndUpdate(courseId, { $push: { questions: newQuestion._id } });
+        const course = await Course.findByIdAndUpdate(courseId, { $push: { questions: newQuestion._id } });
+
+        // Notify enrolled students
+        const enrolledStudents = await User.find({ registeredCourses: courseId });
+        if (enrolledStudents.length > 0 && course) {
+            const notifications = enrolledStudents.map(student => ({
+                userId: student._id,
+                type: 'new_question',
+                message: `New question in ${course.title}`,
+                courseId: course._id,
+                questionId: newQuestion._id
+            }));
+            await Notification.insertMany(notifications);
+        }
 
         res.json(newQuestion);
     } catch (err) {

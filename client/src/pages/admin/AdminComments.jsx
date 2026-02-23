@@ -1,17 +1,25 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { fetchApi } from '../../utils/api';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { Eye, Trash2, X, MessageCircleQuestion, MessageSquare } from 'lucide-react';
 
 const AdminComments = () => {
+    const location = useLocation();
     const [comments, setComments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [replyingId, setReplyingId] = useState(null);
     const [replyText, setReplyText] = useState('');
     const [showSuccessModal, setShowSuccessModal] = useState(false);
-    const [activeTab, setActiveTab] = useState('question'); // 'question' | 'general'
+    const [activeTab, setActiveTab] = useState(location.state?.tab || 'question'); // 'question' | 'general'
     const [viewingComment, setViewingComment] = useState(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+    useEffect(() => {
+        if (location.state?.tab) {
+            setActiveTab(location.state.tab);
+        }
+    }, [location.state?.tab]);
 
     useEffect(() => {
         loadComments();
