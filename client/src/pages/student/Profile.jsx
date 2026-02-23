@@ -85,6 +85,12 @@ const StudentProfile = () => {
         e.preventDefault();
         setLoading(true);
 
+        if (phoneNumber && phoneNumber.trim().length !== 10) {
+            setToast({ message: 'Phone Number must be exactly 10 digits', type: 'error' });
+            setLoading(false);
+            return;
+        }
+
         const formData = new FormData();
         formData.append('fullName', fullName);
         formData.append('department', department);
@@ -246,7 +252,7 @@ const StudentProfile = () => {
                                 <input
                                     type="text"
                                     value={fullName}
-                                    onChange={(e) => setFullName(e.target.value)}
+                                    onChange={(e) => setFullName(e.target.value.replace(/[^a-zA-Z\s]/g, ''))}
                                     disabled={!isProfileEditing}
                                     style={{ width: '100%', cursor: isProfileEditing ? 'text' : 'default', backgroundColor: isProfileEditing ? 'var(--bg-color)' : 'var(--bg-secondary)' }}
                                 />
@@ -256,7 +262,7 @@ const StudentProfile = () => {
                                 <input
                                     type="text"
                                     value={department}
-                                    onChange={(e) => setDepartment(e.target.value)}
+                                    onChange={(e) => setDepartment(e.target.value.replace(/[^a-zA-Z\s]/g, ''))}
                                     disabled={!isProfileEditing}
                                     style={{ width: '100%', cursor: isProfileEditing ? 'text' : 'default', backgroundColor: isProfileEditing ? 'var(--bg-color)' : 'var(--bg-secondary)' }}
                                 />
@@ -266,7 +272,7 @@ const StudentProfile = () => {
                                 <input
                                     type="text"
                                     value={rollNumber}
-                                    onChange={(e) => setRollNumber(e.target.value)}
+                                    onChange={(e) => setRollNumber(e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase())}
                                     disabled={!isProfileEditing}
                                     style={{ width: '100%', cursor: isProfileEditing ? 'text' : 'default', backgroundColor: isProfileEditing ? 'var(--bg-color)' : 'var(--bg-secondary)' }}
                                 />
@@ -276,7 +282,8 @@ const StudentProfile = () => {
                                 <input
                                     type="tel"
                                     value={phoneNumber}
-                                    onChange={(e) => setPhoneNumber(e.target.value)}
+                                    onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
+                                    maxLength={10}
                                     disabled={!isProfileEditing}
                                     style={{ width: '100%', cursor: isProfileEditing ? 'text' : 'default', backgroundColor: isProfileEditing ? 'var(--bg-color)' : 'var(--bg-secondary)' }}
                                 />
