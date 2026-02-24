@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { fetchApi } from '../../utils/api';
 import Toast from '../../components/Toast';
-import { User, Lock, Save, ArrowLeft } from 'lucide-react';
+import { User, Lock, Save, ArrowLeft, Edit2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const AdminProfile = () => {
@@ -14,6 +14,13 @@ const AdminProfile = () => {
     const [newUsername, setNewUsername] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+
+    // Editable States
+    const [isUsernameEditable, setIsUsernameEditable] = useState(false);
+    const [isPasswordEditable, setIsPasswordEditable] = useState(false);
+
+    const usernameInputRef = useRef(null);
+    const passwordInputRef = useRef(null);
 
     const [error, setError] = useState('');
     const [toast, setToast] = useState(null);
@@ -145,48 +152,148 @@ const AdminProfile = () => {
                     <form onSubmit={handleUpdate}>
                         <div className="form-group" style={{ marginBottom: '1rem' }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Username</label>
-                            <input
-                                type="text"
-                                value={newUsername}
-                                onChange={(e) => setNewUsername(e.target.value)}
-                                required
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-color)' }}
-                            />
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                <input
+                                    ref={usernameInputRef}
+                                    type="text"
+                                    value={newUsername}
+                                    onChange={(e) => {
+                                        if (isUsernameEditable) setNewUsername(e.target.value);
+                                    }}
+                                    readOnly={!isUsernameEditable}
+                                    required
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.75rem',
+                                        paddingRight: '2.5rem',
+                                        borderRadius: '4px',
+                                        border: '1px solid var(--border-color)',
+                                        background: 'var(--bg-color)',
+                                        color: 'var(--text-color)',
+                                        opacity: 1,
+                                        cursor: isUsernameEditable ? 'text' : 'default',
+                                        outline: isUsernameEditable ? '' : 'none'
+                                    }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsUsernameEditable(!isUsernameEditable);
+                                        if (!isUsernameEditable) {
+                                            setTimeout(() => usernameInputRef.current?.focus(), 0);
+                                        }
+                                    }}
+                                    style={{
+                                        position: 'absolute',
+                                        right: '10px',
+                                        background: 'none',
+                                        border: 'none',
+                                        color: 'var(--text-secondary)',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        padding: '4px'
+                                    }}
+                                    title={isUsernameEditable ? "Close edit" : "Edit username"}
+                                    tabIndex="-1"
+                                >
+                                    {isUsernameEditable ? <X size={18} /> : <Edit2 size={18} />}
+                                </button>
+                            </div>
                         </div>
 
                         <div style={{ margin: '2rem 0', borderTop: '1px solid var(--border-color)' }}></div>
-                        <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Change Password</h3>
+
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                            <h3 style={{ fontSize: '1.1rem', margin: 0 }}>Change Password</h3>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsPasswordEditable(!isPasswordEditable);
+                                    if (!isPasswordEditable) {
+                                        setTimeout(() => passwordInputRef.current?.focus(), 0);
+                                    } else {
+                                        setNewPassword('');
+                                        setConfirmPassword('');
+                                    }
+                                }}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--text-secondary)',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: '4px'
+                                }}
+                                title={isPasswordEditable ? "Close change password" : "Edit password"}
+                            >
+                                {isPasswordEditable ? <X size={18} /> : <Edit2 size={18} />}
+                            </button>
+                        </div>
 
                         <div className="form-group" style={{ marginBottom: '1rem' }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>New Password (Optional)</label>
                             <input
+                                ref={passwordInputRef}
                                 type="password"
                                 value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                placeholder="Leave blank to keep current password"
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-color)' }}
+                                onChange={(e) => {
+                                    if (isPasswordEditable) setNewPassword(e.target.value);
+                                }}
+                                readOnly={!isPasswordEditable}
+                                placeholder={isPasswordEditable ? "Enter new password" : "••••••••"}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    borderRadius: '4px',
+                                    border: '1px solid var(--border-color)',
+                                    background: 'var(--bg-color)',
+                                    color: 'var(--text-color)',
+                                    opacity: 1,
+                                    cursor: isPasswordEditable ? 'text' : 'default',
+                                    outline: isPasswordEditable ? '' : 'none'
+                                }}
                             />
                         </div>
 
-                        {newPassword && (
+                        {(newPassword || isPasswordEditable) && (
                             <div className="form-group" style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Confirm New Password</label>
                                 <input
                                     type="password"
                                     value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    required
-                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-color)' }}
+                                    onChange={(e) => {
+                                        if (isPasswordEditable) setConfirmPassword(e.target.value);
+                                    }}
+                                    readOnly={!isPasswordEditable}
+                                    required={!!newPassword}
+                                    placeholder={isPasswordEditable ? "Confirm new password" : "••••••••"}
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.75rem',
+                                        borderRadius: '4px',
+                                        border: '1px solid var(--border-color)',
+                                        background: 'var(--bg-color)',
+                                        color: 'var(--text-color)',
+                                        opacity: 1,
+                                        cursor: isPasswordEditable ? 'text' : 'default',
+                                        outline: isPasswordEditable ? '' : 'none'
+                                    }}
                                 />
                             </div>
                         )}
 
-                        <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
-                            <button type="button" onClick={() => navigate('/admin/dashboard')} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
-                            <button type="submit" className="btn" style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }} disabled={loading}>
-                                <Save size={18} /> {loading ? 'Saving...' : 'Save Changes'}
-                            </button>
-                        </div>
+                        {(isUsernameEditable || isPasswordEditable) && (
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                                <button type="button" onClick={() => navigate('/admin/dashboard')} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
+                                <button type="submit" className="btn" style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }} disabled={loading}>
+                                    <Save size={18} /> {loading ? 'Saving...' : 'Save Changes'}
+                                </button>
+                            </div>
+                        )}
                     </form>
                 )}
             </div>

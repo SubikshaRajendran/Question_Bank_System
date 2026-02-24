@@ -19,19 +19,24 @@ const AdminStudentProfile = () => {
     useEffect(() => {
         const fetchStudentDetails = async () => {
             try {
-                setLoading(true);
+                if (!student) setLoading(true); // Only show loading on initial fetch
                 const data = await fetchApi(`/users/admin/student/${id}`);
-                setStudent(data);
+                setStudent(prev => prev ? { ...prev, isOnline: data.isOnline, lastLogin: data.lastLogin } : data);
                 setError(null);
             } catch (err) {
                 console.error('Failed to fetch student:', err);
-                setError(err.message || 'Failed to load student details.');
+                if (!student) setError(err.message || 'Failed to load student details.');
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchStudentDetails();
+        fetchStudentDetails(); // Initial fetch
+
+        // Interval for polling activity status
+        const intervalId = setInterval(fetchStudentDetails, 5000);
+
+        return () => clearInterval(intervalId); // Cleanup on unmount
     }, [id]);
 
     const handleToggleBlock = async () => {
@@ -131,32 +136,50 @@ const AdminStudentProfile = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
                     {/* Top Row: Avatar Context */}
-                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
-                        {student.profilePicture ? (
-                            <img
-                                src={student.profilePicture}
-                                alt="Profile"
-                                style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--border-color)', boxShadow: 'var(--card-shadow)' }}
-                            />
-                        ) : (
-                            <div style={{ width: '120px', height: '120px', borderRadius: '50%', background: 'var(--bg-secondary)', border: '3px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', boxShadow: 'var(--card-shadow)' }}>
-                                <User size={50} />
+                    {/* Top Row: Avatar Context */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                            {student.profilePicture ? (
+                                <img
+                                    src={student.profilePicture}
+                                    alt="Profile"
+                                    style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-color)', boxShadow: 'var(--card-shadow)' }}
+                                />
+                            ) : (
+                                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--bg-secondary)', border: '2px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', boxShadow: 'var(--card-shadow)' }}>
+                                    <User size={40} />
+                                </div>
+                            )}
+                            <div>
+                                <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-color)' }}>{student.fullName || '-'}</h3>
+                                <p style={{ margin: '0.25rem 0 0 0', fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500 }}>{student.username ? `@${student.username}` : ''}</p>
                             </div>
-                        )}
+                        </div>
+
+                        {/* Activity Status on the right */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, padding: '0.5rem 1rem', background: 'var(--bg-secondary)', borderRadius: '2rem' }}>
+                            {(() => {
+                                const isActive = student.isOnline && student.lastLogin &&
+                                    (new Date() - new Date(student.lastLogin) < 2 * 60 * 1000);
+
+                                return (
+                                    <>
+                                        <div style={{
+                                            width: '10px', height: '10px', borderRadius: '50%',
+                                            background: isActive ? '#10b981' : '#94a3b8',
+                                            boxShadow: isActive ? '0 0 0 4px rgba(16, 185, 129, 0.2)' : 'none'
+                                        }}></div>
+                                        <span style={{ color: isActive ? 'var(--success)' : 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                            {isActive ? 'Active (online)' : 'Offline'}
+                                        </span>
+                                    </>
+                                );
+                            })()}
+                        </div>
                     </div>
 
                     {/* Data Grid container aligned exactly exactly to user guidelines */}
                     <div style={{ display: 'grid', gap: '1.25rem', fontSize: '1.05rem' }}>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.75rem', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-                            <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Full Name:</span>
-                            <span style={{ fontWeight: 600, color: 'var(--text-color)' }}>{student.fullName || '-'}</span>
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.75rem', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-                            <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Username:</span>
-                            <span style={{ fontWeight: 600, color: 'var(--text-color)' }}>{student.username || '-'}</span>
-                        </div>
 
                         <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.75rem', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
                             <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Email:</span>
@@ -176,29 +199,6 @@ const AdminStudentProfile = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.75rem', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
                             <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Phone Number:</span>
                             <span style={{ color: 'var(--text-color)' }}>{student.phoneNumber || '-'}</span>
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.75rem', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-                            <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Activity Status:</span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
-                                {(() => {
-                                    const isActive = student.isOnline && student.lastLogin &&
-                                        (new Date() - new Date(student.lastLogin) < 2 * 60 * 1000);
-
-                                    return (
-                                        <>
-                                            <div style={{
-                                                width: '10px', height: '10px', borderRadius: '50%',
-                                                background: isActive ? '#10b981' : '#94a3b8',
-                                                boxShadow: isActive ? '0 0 0 4px rgba(16, 185, 129, 0.2)' : 'none'
-                                            }}></div>
-                                            <span style={{ color: isActive ? 'var(--success)' : 'var(--text-secondary)' }}>
-                                                {isActive ? 'Active (online)' : 'Offline'}
-                                            </span>
-                                        </>
-                                    );
-                                })()}
-                            </span>
                         </div>
 
                         <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.75rem', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
