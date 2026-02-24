@@ -17,26 +17,56 @@ const AdminStudentProfile = () => {
     const [actionLoading, setActionLoading] = useState(false);
 
     useEffect(() => {
-        const fetchStudentDetails = async () => {
+        let isMounted = true;
+
+        const fetchStudentDetails = async (isInitial = false) => {
             try {
-                if (!student) setLoading(true); // Only show loading on initial fetch
+                if (isInitial) setLoading(true); // Only show loading on initial fetch
+
                 const data = await fetchApi(`/users/admin/student/${id}`);
-                setStudent(prev => prev ? { ...prev, isOnline: data.isOnline, lastLogin: data.lastLogin } : data);
-                setError(null);
+
+                if (!isMounted) return;
+
+                if (isInitial) {
+                    setStudent(data);
+                    setError(null);
+                } else {
+                    setStudent(prev => {
+                        if (!prev) return data;
+
+                        // Calculate active status to cleanly avoid unnecessary re-renders
+                        const prevWasActive = prev.isOnline && prev.lastLogin &&
+                            (new Date() - new Date(prev.lastLogin) < 2 * 60 * 1000);
+
+                        const newIsActive = data.isOnline && data.lastLogin &&
+                            (new Date() - new Date(data.lastLogin) < 2 * 60 * 1000);
+
+                        // ONLY update the state if the actual derived UI status flipped 
+                        // or if lastLogin updated while they are still active
+                        if (prevWasActive !== newIsActive || (newIsActive && prev.lastLogin !== data.lastLogin)) {
+                            return { ...prev, isOnline: data.isOnline, lastLogin: data.lastLogin };
+                        }
+
+                        return prev; // No status change -> return identical reference to avoid re-render
+                    });
+                }
             } catch (err) {
                 console.error('Failed to fetch student:', err);
-                if (!student) setError(err.message || 'Failed to load student details.');
+                if (isInitial && isMounted) setError(err.message || 'Failed to load student details.');
             } finally {
-                setLoading(false);
+                if (isInitial && isMounted) setLoading(false);
             }
         };
 
-        fetchStudentDetails(); // Initial fetch
+        fetchStudentDetails(true); // Initial fetch
 
         // Interval for polling activity status
-        const intervalId = setInterval(fetchStudentDetails, 5000);
+        const intervalId = setInterval(() => fetchStudentDetails(false), 5000);
 
-        return () => clearInterval(intervalId); // Cleanup on unmount
+        return () => {
+            isMounted = false;
+            clearInterval(intervalId);
+        };
     }, [id]);
 
     const handleToggleBlock = async () => {
