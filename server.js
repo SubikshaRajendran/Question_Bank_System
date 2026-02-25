@@ -68,6 +68,7 @@ app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/questions', require('./routes/questions'));
 app.use('/api/comments', require('./routes/comments'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/quiz', require('./routes/quiz'));
 
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'Backend is running' });

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { fetchApi } from '../../utils/api';
 import CourseCard from '../../components/CourseCard';
-import { Search, Filter, User, Bell } from 'lucide-react';
+import { Search, Filter, User, Bell, Trophy } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const StudentDashboard = () => {
@@ -184,61 +184,73 @@ const StudentDashboard = () => {
                     </div>
                     <h2 style={{ margin: 0 }}>Learning Dashboard</h2>
 
-                    {/* Notification Icon */}
-                    <div style={{ position: 'relative', marginLeft: '1rem' }} ref={notifDropdownRef}>
+                    {/* Notification and Trophy Icons */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '1rem' }}>
+                        <div style={{ position: 'relative' }} ref={notifDropdownRef}>
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => setIsNotifDropdownOpen(!isNotifDropdownOpen)}
+                                style={{ position: 'relative', padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                title="Notifications"
+                            >
+                                <Bell size={24} />
+                                {notifications.length > 0 && (
+                                    <span style={{
+                                        position: 'absolute', top: '-5px', right: '-5px',
+                                        background: 'var(--danger)', color: 'white', borderRadius: '50%',
+                                        width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontSize: '0.75rem', fontWeight: 'bold'
+                                    }}>
+                                        {notifications.length}
+                                    </span>
+                                )}
+                            </button>
+
+                            {isNotifDropdownOpen && (
+                                <div style={{
+                                    position: 'absolute', top: '110%', left: 0,
+                                    background: 'var(--card-bg)', border: '1px solid var(--border-color)',
+                                    borderRadius: '8px', padding: '0.5rem', minWidth: '300px',
+                                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)', zIndex: 1000
+                                }}>
+                                    <h4 style={{ margin: '0 0 0.5rem 0', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Notifications</h4>
+                                    {notifications.length > 0 ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '300px', overflowY: 'auto' }}>
+                                            {notifications.map(notif => (
+                                                <div
+                                                    key={notif._id}
+                                                    onClick={() => handleNotificationClick(notif)}
+                                                    style={{
+                                                        padding: '0.75rem', background: 'var(--bg-secondary)',
+                                                        borderRadius: '4px', cursor: 'pointer', transition: 'background 0.2s',
+                                                        fontSize: '0.9rem'
+                                                    }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-color)'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                                                >
+                                                    <strong>{notif.message}</strong>
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                                                        {new Date(notif.createdAt).toLocaleDateString()}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p style={{ margin: 0, padding: '0.5rem', color: 'var(--text-secondary)', textAlign: 'center', fontSize: '0.9rem' }}>No new notifications</p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Trophy Icon */}
                         <button
                             className="btn btn-secondary"
-                            onClick={() => setIsNotifDropdownOpen(!isNotifDropdownOpen)}
+                            onClick={() => navigate('/student/leaderboard')}
                             style={{ position: 'relative', padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                            title="Notifications"
+                            title="Achievements"
                         >
-                            <Bell size={24} />
-                            {notifications.length > 0 && (
-                                <span style={{
-                                    position: 'absolute', top: '-5px', right: '-5px',
-                                    background: 'var(--danger)', color: 'white', borderRadius: '50%',
-                                    width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '0.75rem', fontWeight: 'bold'
-                                }}>
-                                    {notifications.length}
-                                </span>
-                            )}
+                            <Trophy size={24} />
                         </button>
-
-                        {isNotifDropdownOpen && (
-                            <div style={{
-                                position: 'absolute', top: '110%', left: 0,
-                                background: 'var(--card-bg)', border: '1px solid var(--border-color)',
-                                borderRadius: '8px', padding: '0.5rem', minWidth: '300px',
-                                boxShadow: '0 4px 6px rgba(0,0,0,0.1)', zIndex: 1000
-                            }}>
-                                <h4 style={{ margin: '0 0 0.5rem 0', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Notifications</h4>
-                                {notifications.length > 0 ? (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '300px', overflowY: 'auto' }}>
-                                        {notifications.map(notif => (
-                                            <div
-                                                key={notif._id}
-                                                onClick={() => handleNotificationClick(notif)}
-                                                style={{
-                                                    padding: '0.75rem', background: 'var(--bg-secondary)',
-                                                    borderRadius: '4px', cursor: 'pointer', transition: 'background 0.2s',
-                                                    fontSize: '0.9rem'
-                                                }}
-                                                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-color)'}
-                                                onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
-                                            >
-                                                <strong>{notif.message}</strong>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                                                    {new Date(notif.createdAt).toLocaleDateString()}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p style={{ margin: 0, padding: '0.5rem', color: 'var(--text-secondary)', textAlign: 'center', fontSize: '0.9rem' }}>No new notifications</p>
-                                )}
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>

@@ -16,8 +16,10 @@ import StudentDashboard from './pages/student/Dashboard';
 import MyCourses from './pages/student/MyCourses';
 import ReviewLater from './pages/student/ReviewLater';
 import CourseView from './pages/student/CourseView';
+import QuizView from './pages/student/QuizView';
 import StudentComments from './pages/student/StudentComments';
-import StudentProfile from './pages/student/Profile'; // Imported
+import StudentProfile from './pages/student/Profile';
+import Leaderboard from './pages/student/Leaderboard';
 
 import AdminDashboard from './pages/admin/Dashboard';
 import AddCourse from './pages/admin/AddCourse';
@@ -48,8 +50,10 @@ function App() {
               <Route path="student/courses" element={<MyCourses />} />
               <Route path="student/review" element={<ReviewLater />} />
               <Route path="student/comments" element={<StudentComments />} />
-              <Route path="student/profile" element={<StudentProfile />} /> {/* Added Route */}
+              <Route path="student/profile" element={<StudentProfile />} />
+              <Route path="student/leaderboard" element={<Leaderboard />} />
               <Route path="course/:id" element={<CourseView />} />
+              <Route path="student/course/:id/quiz" element={<QuizView />} />
             </Route>
 
             {/* Admin Routes */}

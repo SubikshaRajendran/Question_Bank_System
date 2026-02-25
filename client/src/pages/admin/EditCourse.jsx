@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { fetchApi } from '../../utils/api';
-import { Trash2, AlertTriangle, ArrowLeft, Save, X, Edit2 } from 'lucide-react';
+import { Trash2, AlertTriangle, ArrowLeft, Save, X, Edit2, Upload } from 'lucide-react';
 import Toast from '../../components/Toast';
 import ConfirmationModal from '../../components/ConfirmationModal';
 
@@ -31,6 +31,22 @@ const EditCourse = () => {
     const [activeTab, setActiveTab] = useState('details');
     const [isEditingDetails, setIsEditingDetails] = useState(false);
     const [selectedQuestionIds, setSelectedQuestionIds] = useState([]);
+
+    // Quiz States
+    const [quizQuestions, setQuizQuestions] = useState([]);
+    const [editingQuizQId, setEditingQuizQId] = useState(null);
+    const [quizForm, setQuizForm] = useState({
+        question: '',
+        optionA: '',
+        optionB: '',
+        optionC: '',
+        optionD: '',
+        correctAnswer: 'A'
+    });
+    const [showQuizImportModal, setShowQuizImportModal] = useState(false);
+    const [pendingQuizQuestions, setPendingQuizQuestions] = useState([]);
+    const [showDeleteSelectedQuizModal, setShowDeleteSelectedQuizModal] = useState(false);
+    const [selectedQuizQuestionIds, setSelectedQuizQuestionIds] = useState([]);
 
     // Modal State
     const [showImportModal, setShowImportModal] = useState(false);
@@ -67,6 +83,11 @@ const EditCourse = () => {
             setDepartment(data.course.department || '');
             setQuestions(data.questions || []);
             setStudentCount(data.studentCount || 0);
+
+            // Fetch Quiz Questions
+            const quizData = await fetchApi(`/quiz/admin/course/${id}`);
+            setQuizQuestions(quizData || []);
+
         } catch (err) {
             console.error("Failed to load course", err);
             showToast('Failed to load course', 'error');
@@ -280,6 +301,216 @@ const EditCourse = () => {
         }
     };
 
+    // --- QUIZ FUNCTIONS ---
+    const handleSaveQuizQuestion = async (e) => {
+        e.preventDefault();
+        if (!quizForm.question.trim() || !quizForm.optionA.trim() || !quizForm.optionB.trim() || !quizForm.optionC.trim() || !quizForm.optionD.trim()) {
+            showToast('Please fill out all quiz fields', 'error');
+            return;
+        }
+
+        setActionLoading(true);
+        try {
+            if (editingQuizQId) {
+                // Update
+                const res = await fetchApi(`/quiz/admin/question/${editingQuizQId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(quizForm)
+                });
+                setQuizQuestions(quizQuestions.map(q => q._id === editingQuizQId ? res : q));
+                showToast('Quiz question updated successfully');
+            } else {
+                // Create
+                const newCtx = { ...quizForm, courseId: id };
+                const res = await fetchApi(`/quiz/admin/question`, {
+                    method: 'POST',
+                    body: JSON.stringify(newCtx)
+                });
+                setQuizQuestions([res, ...quizQuestions]);
+                showToast('Quiz question created successfully');
+            }
+
+            // Reset form
+            setEditingQuizQId(null);
+            setQuizForm({
+                question: '', optionA: '', optionB: '', optionC: '', optionD: '', correctAnswer: 'A'
+            });
+
+        } catch (err) {
+            console.error(err);
+            showToast('Failed to save quiz question', 'error');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleEditQuizQuestionClick = (q) => {
+        setEditingQuizQId(q._id);
+        setQuizForm({
+            question: q.question,
+            optionA: q.optionA,
+            optionB: q.optionB,
+            optionC: q.optionC,
+            optionD: q.optionD,
+            correctAnswer: q.correctAnswer
+        });
+        // Scroll slightly up so they can see the form
+        window.scrollTo({ top: 300, behavior: 'smooth' });
+    };
+
+    const handleDeleteQuizQuestion = async (qId) => {
+        if (!window.confirm("Are you sure you want to delete this quiz question?")) return;
+        try {
+            await fetchApi(`/quiz/admin/question/${qId}`, { method: 'DELETE' });
+            setQuizQuestions(quizQuestions.filter(q => q._id !== qId));
+            showToast('Quiz question deleted.');
+        } catch (err) {
+            console.error(err);
+            showToast("Failed to delete quiz question", 'error');
+        }
+    };
+
+    const handleCancelQuizEdit = () => {
+        setEditingQuizQId(null);
+        setQuizForm({
+            question: '', optionA: '', optionB: '', optionC: '', optionD: '', correctAnswer: 'A'
+        });
+    };
+
+    const toggleSelectQuizQuestion = (qId) => {
+        setSelectedQuizQuestionIds(prev =>
+            prev.includes(qId) ? prev.filter(id => id !== qId) : [...prev, qId]
+        );
+    };
+
+    const toggleSelectAllQuizQuestions = () => {
+        if (selectedQuizQuestionIds.length === quizQuestions.length && quizQuestions.length > 0) {
+            setSelectedQuizQuestionIds([]);
+        } else {
+            setSelectedQuizQuestionIds(quizQuestions.map(q => q._id));
+        }
+    };
+
+    const confirmDeleteSelectedQuizQuestions = async () => {
+        if (selectedQuizQuestionIds.length === 0) return;
+        setActionLoading(true);
+        try {
+            const res = await fetchApi('/quiz/admin/question/bulk-delete', {
+                method: 'POST',
+                body: JSON.stringify({ questionIds: selectedQuizQuestionIds })
+            });
+            if (res.success) {
+                setQuizQuestions(quizQuestions.filter(q => !selectedQuizQuestionIds.includes(q._id)));
+                setSelectedQuizQuestionIds([]);
+                showToast(`Successfully deleted ${res.deletedCount} quiz questions.`);
+            }
+        } catch (err) {
+            console.error(err);
+            showToast("Failed to delete selected quiz questions", 'error');
+        } finally {
+            setActionLoading(false);
+            setShowDeleteSelectedQuizModal(false);
+        }
+    };
+
+    const handleQuizFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const bstr = evt.target.result;
+                const wb = XLSX.read(bstr, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const data = XLSX.utils.sheet_to_json(ws);
+
+                if (data.length === 0) {
+                    showToast('The uploaded file is empty.', 'error');
+                    return;
+                }
+
+                const validQuestions = [];
+                let errorCount = 0;
+
+                data.forEach((row, index) => {
+                    const qText = row.question || row.Question;
+                    const optA = row.optionA || row.OptionA;
+                    const optB = row.optionB || row.OptionB;
+                    const optC = row.optionC || row.OptionC;
+                    const optD = row.optionD || row.OptionD;
+                    let correctAns = row.correctAnswer || row.CorrectAnswer;
+
+                    if (qText && optA && optB && optC && optD && correctAns) {
+                        correctAns = String(correctAns).trim().toUpperCase();
+                        if (['A', 'B', 'C', 'D'].includes(correctAns)) {
+                            validQuestions.push({
+                                courseId: id,
+                                question: qText,
+                                optionA: optA,
+                                optionB: optB,
+                                optionC: optC,
+                                optionD: optD,
+                                correctAnswer: correctAns
+                            });
+                        } else {
+                            errorCount++;
+                        }
+                    } else {
+                        errorCount++;
+                    }
+                });
+
+                if (validQuestions.length > 0) {
+                    setPendingQuizQuestions(validQuestions);
+                    setShowQuizImportModal(true);
+                    if (errorCount > 0) {
+                        showToast(`Found ${validQuestions.length} valid questions. Skipped ${errorCount} invalid rows.`, 'warning');
+                    }
+                } else {
+                    showToast('No valid quiz questions found. Ensure columns match: question, optionA, optionB, optionC, optionD, correctAnswer (A/B/C/D).', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Error reading file. Please upload a valid Excel or CSV.', 'error');
+            }
+        };
+        reader.readAsBinaryString(file);
+
+        // Reset file input so same file can be selected again if needed
+        e.target.value = null;
+    };
+
+    const confirmQuizImport = async () => {
+        setActionLoading(true);
+        try {
+            const res = await fetchApi('/quiz/admin/question/bulk', {
+                method: 'POST',
+                body: JSON.stringify({ questions: pendingQuizQuestions })
+            });
+
+            if (res.success) {
+                // Refresh quiz questions list
+                const quizData = await fetchApi(`/quiz/admin/course/${id}`);
+                setQuizQuestions(quizData || []);
+                showToast(`Successfully imported ${res.count} quiz questions!`);
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Failed to import quiz questions', 'error');
+        } finally {
+            setActionLoading(false);
+            setShowQuizImportModal(false);
+            setPendingQuizQuestions([]);
+        }
+    };
+
+    const cancelQuizImport = () => {
+        setShowQuizImportModal(false);
+        setPendingQuizQuestions([]);
+    };
+
     // Inline Editing Functions
     const startEditing = (q) => {
         setEditingQId(q._id);
@@ -350,6 +581,13 @@ const EditCourse = () => {
                     style={{ borderBottomLeftRadius: 0, borderBottomRightRadius: 0, marginBottom: '-1px' }}
                 >
                     Manage Questions
+                </button>
+                <button
+                    className={`btn ${activeTab === 'quiz' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => setActiveTab('quiz')}
+                    style={{ borderBottomLeftRadius: 0, borderBottomRightRadius: 0, marginBottom: '-1px' }}
+                >
+                    Quiz Questions
                 </button>
             </div>
 
@@ -619,10 +857,11 @@ const EditCourse = () => {
                                             <button
                                                 onClick={() => startEditing(q)}
                                                 className="btn btn-sm btn-secondary"
-                                                style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.4rem' }}
+                                                title="Edit"
                                                 disabled={editingQId === q._id}
                                             >
-                                                <Edit2 size={16} /> Edit
+                                                <Edit2 size={16} />
                                             </button>
                                             <button
                                                 onClick={() => handleDeleteQuestion(q._id)}
@@ -639,15 +878,209 @@ const EditCourse = () => {
                     </div>
                 </>
             )}
-            {/* Confirmation Modal */}
+
+            {activeTab === 'quiz' && (
+                <>
+                    <div className="card" style={{ marginBottom: '2rem' }}>
+                        <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                            {editingQuizQId ? 'Edit Quiz Question' : 'Add New Quiz Question'}
+                        </h3>
+                        <form onSubmit={handleSaveQuizQuestion}>
+                            <div className="form-group" style={{ marginBottom: '1rem' }}>
+                                <label style={{ fontSize: '1rem', fontWeight: 600 }}>Question Text</label>
+                                <textarea
+                                    required
+                                    rows="3"
+                                    placeholder="Enter quiz question here..."
+                                    value={quizForm.question}
+                                    onChange={(e) => setQuizForm({ ...quizForm, question: e.target.value })}
+                                    style={{ width: '100%', fontSize: '1rem', padding: '0.75rem', borderColor: 'var(--primary-color)', borderRadius: '4px' }}
+                                ></textarea>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                <div>
+                                    <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>Option A</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={quizForm.optionA}
+                                        onChange={(e) => setQuizForm({ ...quizForm, optionA: e.target.value })}
+                                        style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>Option B</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={quizForm.optionB}
+                                        onChange={(e) => setQuizForm({ ...quizForm, optionB: e.target.value })}
+                                        style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>Option C</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={quizForm.optionC}
+                                        onChange={(e) => setQuizForm({ ...quizForm, optionC: e.target.value })}
+                                        style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>Option D</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={quizForm.optionD}
+                                        onChange={(e) => setQuizForm({ ...quizForm, optionD: e.target.value })}
+                                        style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-group" style={{ marginBottom: '1.5rem', maxWidth: '300px' }}>
+                                <label style={{ fontSize: '1rem', fontWeight: 600 }}>Correct Answer</label>
+                                <select
+                                    value={quizForm.correctAnswer}
+                                    onChange={(e) => setQuizForm({ ...quizForm, correctAnswer: e.target.value })}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}
+                                >
+                                    <option value="A">Option A</option>
+                                    <option value="B">Option B</option>
+                                    <option value="C">Option C</option>
+                                    <option value="D">Option D</option>
+                                </select>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                                <button type="submit" className="btn" disabled={actionLoading} style={{ fontWeight: 600 }}>
+                                    {editingQuizQId ? 'Update Quiz Question' : 'Save Quiz Question'}
+                                </button>
+                                {editingQuizQId && (
+                                    <button type="button" className="btn btn-secondary" onClick={handleCancelQuizEdit} disabled={actionLoading}>
+                                        Cancel Edit
+                                    </button>
+                                )}
+                            </div>
+                        </form>
+                    </div>
+
+                    <div className="card">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={quizQuestions.length > 0 && selectedQuizQuestionIds.length === quizQuestions.length}
+                                    onChange={toggleSelectAllQuizQuestions}
+                                    style={{ cursor: 'pointer', width: '18px', height: '18px' }}
+                                    title="Select All"
+                                />
+                                <h3 style={{ fontSize: '1.25rem', margin: 0 }}>Existing Quiz Questions ({quizQuestions.length})</h3>
+                            </div>
+                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                {selectedQuizQuestionIds.length > 0 && (
+                                    <button
+                                        onClick={() => setShowDeleteSelectedQuizModal(true)}
+                                        className="btn btn-danger"
+                                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                    >
+                                        <Trash2 size={16} /> Delete Selected ({selectedQuizQuestionIds.length})
+                                    </button>
+                                )}
+                                <input
+                                    type="file"
+                                    id="quiz-upload"
+                                    accept=".xlsx, .xls, .csv"
+                                    style={{ display: 'none' }}
+                                    onChange={handleQuizFileUpload}
+                                />
+                                <label htmlFor="quiz-upload" className="btn btn-secondary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Upload size={16} /> Import Quiz Questions
+                                </label>
+                            </div>
+                        </div>
+                        <div>
+                            {quizQuestions.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-secondary)' }}>
+                                    <p style={{ fontSize: '1.1rem' }}>No quiz questions created yet.</p>
+                                </div>
+                            ) : (
+                                quizQuestions.map((q, index) => (
+                                    <div key={q._id} style={{ borderBottom: '1px solid var(--border-color)', padding: '1rem 0', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedQuizQuestionIds.includes(q._id)}
+                                            onChange={() => toggleSelectQuizQuestion(q._id)}
+                                            style={{ cursor: 'pointer', width: '18px', height: '18px', marginTop: '0.25rem' }}
+                                        />
+                                        <div style={{ flex: 1, paddingRight: '1rem' }}>
+                                            <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{index + 1}. {q.question}</div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                                                <div><strong>A:</strong> {q.optionA}</div>
+                                                <div><strong>B:</strong> {q.optionB}</div>
+                                                <div><strong>C:</strong> {q.optionC}</div>
+                                                <div><strong>D:</strong> {q.optionD}</div>
+                                            </div>
+                                            <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: 'var(--success)', fontWeight: 600 }}>
+                                                Correct Answer: {q.correctAnswer}
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                                            <button
+                                                onClick={() => handleEditQuizQuestionClick(q)}
+                                                className="btn btn-sm btn-secondary"
+                                            >
+                                                <Edit2 size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteQuizQuestion(q._id)}
+                                                className="btn btn-sm btn-danger"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </>
+            )}
+            {/* Quiz Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showQuizImportModal}
+                title="Confirm Quiz Import"
+                message={`Are you sure you want to import ${pendingQuizQuestions.length} quiz questions?`}
+                onConfirm={confirmQuizImport}
+                onCancel={cancelQuizImport}
+                confirmText={`Import ${pendingQuizQuestions.length} Questions`}
+                loading={actionLoading}
+            />
+
+            {/* Delete Selected Quiz Questions Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showDeleteSelectedQuizModal}
+                title="Delete Selected Quiz Questions"
+                message="Are you sure you want to delete the selected quiz questions? This action cannot be undone."
+                onConfirm={confirmDeleteSelectedQuizQuestions}
+                onCancel={() => setShowDeleteSelectedQuizModal(false)}
+                confirmText="Yes, Delete"
+                cancelText="Cancel"
+                loading={actionLoading}
+            />
+
+            {/* Original Confirmation Modal */}
             <ConfirmationModal
                 isOpen={showImportModal}
                 title="Confirm Import"
                 message={importModalMessage}
                 onConfirm={confirmImport}
                 onCancel={cancelImport}
-                confirmText="Yes, Import"
-                cancelText="No"
+                confirmText={`Import ${pendingQuestions.length} Questions`}
+                loading={actionLoading}
             />
 
             {/* Delete Course Confirmation Modal */}

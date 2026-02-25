@@ -36,6 +36,7 @@ const CourseView = () => {
     const [commentText, setCommentText] = useState('');
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showCompletionModal, setShowCompletionModal] = useState(false);
+    const [showEarlyQuizModal, setShowEarlyQuizModal] = useState(false);
     const [animationStage, setAnimationStage] = useState('initial'); // 'initial', 'check', 'trophy'
 
     const handleAddComment = async (qId) => {
@@ -207,7 +208,9 @@ const CourseView = () => {
             });
             setReadQIds(prev => {
                 const updated = [...prev, qId];
-                if (updated.length === questions.length) {
+
+                // Enforce exact 100% completion match
+                if (questions.length > 0 && updated.length === questions.length) {
                     setShowCompletionModal(true);
                     setAnimationStage('check');
 
@@ -423,6 +426,33 @@ const CourseView = () => {
                         </p>
                     </div>
 
+                    {/* Sticky Take Quiz Button */}
+                    <div style={{
+                        position: 'sticky',
+                        top: '100px',
+                        marginBottom: '2rem',
+                        zIndex: 10
+                    }}>
+                        <button
+                            className="btn"
+                            style={{
+                                width: '100%',
+                                fontSize: '1.1rem',
+                                padding: '1rem',
+                                boxShadow: '0 4px 14px 0 rgba(79, 70, 229, 0.39)'
+                            }}
+                            onClick={() => {
+                                if (readQIds.length < questions.length) {
+                                    setShowEarlyQuizModal(true);
+                                } else {
+                                    navigate(`/student/course/${course._id}/quiz`);
+                                }
+                            }}
+                        >
+                            Take Quiz Now
+                        </button>
+                    </div>
+
                     <h4 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: '700' }}>Search & Filter</h4>
 
                     <input
@@ -545,26 +575,58 @@ const CourseView = () => {
                                 🎉 Congratulations on completing the course! Great job!
                             </p>
 
-                            <button
-                                className="btn"
-                                style={{
-                                    width: '100%',
-                                    fontSize: '1.1rem',
-                                    padding: '0.8rem',
-                                    borderRadius: '1rem',
-                                    boxShadow: '0 4px 14px 0 rgba(79, 70, 229, 0.39)',
-                                    opacity: animationStage === 'trophy' ? 1 : 0,
-                                    transform: animationStage === 'trophy' ? 'translateY(0)' : 'translateY(10px)',
-                                    transition: 'all 0.5s ease-out 0.4s'
-                                }}
-                                onClick={() => navigate('/student/courses')}
-                            >
-                                Continue
-                            </button>
+                            <div style={{
+                                display: 'flex',
+                                gap: '1rem',
+                                width: '100%',
+                                opacity: animationStage === 'trophy' ? 1 : 0,
+                                transform: animationStage === 'trophy' ? 'translateY(0)' : 'translateY(10px)',
+                                transition: 'all 0.5s ease-out 0.4s'
+                            }}>
+                                <button
+                                    className="btn btn-secondary"
+                                    style={{
+                                        flex: 1,
+                                        fontSize: '1rem',
+                                        padding: '0.8rem',
+                                        borderRadius: '1rem'
+                                    }}
+                                    onClick={() => navigate('/student/courses')}
+                                >
+                                    Continue
+                                </button>
+                                <button
+                                    className="btn"
+                                    style={{
+                                        flex: 1,
+                                        fontSize: '1rem',
+                                        padding: '0.8rem',
+                                        borderRadius: '1rem',
+                                        boxShadow: '0 4px 14px 0 rgba(79, 70, 229, 0.39)'
+                                    }}
+                                    onClick={() => navigate(`/student/course/${course._id}/quiz`)}
+                                >
+                                    Take Quiz
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* Early Quiz Start Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showEarlyQuizModal}
+                title="Start Quiz Early?"
+                message="You have not completed all the questions in this course. Are you sure you want to take the quiz now?"
+                onConfirm={() => {
+                    setShowEarlyQuizModal(false);
+                    navigate(`/student/course/${course._id}/quiz`);
+                }}
+                onCancel={() => setShowEarlyQuizModal(false)}
+                confirmText="Yes, take quiz"
+                cancelText="Cancel"
+            />
         </div>
     );
 };

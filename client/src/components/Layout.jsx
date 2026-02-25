@@ -50,6 +50,32 @@ const Layout = () => {
         };
     }, [user]);
 
+    // Heartbeat for Student Activity Tracking
+    React.useEffect(() => {
+        let heartbeatInterval;
+        const sendHeartbeat = async () => {
+            if (user && user.role === 'student' && user._id) {
+                try {
+                    await fetchApi('/auth/student/heartbeat', {
+                        method: 'POST',
+                        body: JSON.stringify({ userId: user._id })
+                    });
+                } catch (err) {
+                    // Ignore heartbeat failures silently
+                }
+            }
+        };
+
+        if (user && user.role === 'student') {
+            sendHeartbeat(); // Optional immediate fetch
+            heartbeatInterval = setInterval(sendHeartbeat, 60000); // Heartbeat every 1 minute
+        }
+
+        return () => {
+            if (heartbeatInterval) clearInterval(heartbeatInterval);
+        };
+    }, [user]);
+
     React.useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {

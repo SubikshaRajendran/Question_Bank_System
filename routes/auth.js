@@ -486,6 +486,24 @@ router.post('/student/register', async (req, res) => {
     }
 });
 
+// Heartbeat (Update last active time)
+router.post('/student/heartbeat', async (req, res) => {
+    try {
+        const { userId } = req.body;
+        if (!userId) return res.status(400).json({ error: 'User ID required' });
+
+        const user = await User.findById(userId);
+        if (user && !user.isBlocked) {
+            user.isOnline = true;
+            user.lastLogin = new Date(); // Update last active time to current
+            await user.save();
+        }
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Logout (Set Offline)
 router.post('/student/logout', async (req, res) => {
     try {
