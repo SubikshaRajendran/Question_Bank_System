@@ -41,7 +41,7 @@ const EditCourse = () => {
         optionB: '',
         optionC: '',
         optionD: '',
-        correctAnswer: 'A'
+        correctAnswer: ''
     });
     const [showQuizImportModal, setShowQuizImportModal] = useState(false);
     const [pendingQuizQuestions, setPendingQuizQuestions] = useState([]);
@@ -304,8 +304,8 @@ const EditCourse = () => {
     // --- QUIZ FUNCTIONS ---
     const handleSaveQuizQuestion = async (e) => {
         e.preventDefault();
-        if (!quizForm.question.trim() || !quizForm.optionA.trim() || !quizForm.optionB.trim() || !quizForm.optionC.trim() || !quizForm.optionD.trim()) {
-            showToast('Please fill out all quiz fields', 'error');
+        if (!quizForm.question.trim() || !quizForm.optionA.trim() || !quizForm.optionB.trim() || !quizForm.optionC.trim() || !quizForm.optionD.trim() || !quizForm.correctAnswer) {
+            showToast('Please fill out all quiz fields and select a correct option.', 'error');
             return;
         }
 
@@ -333,7 +333,7 @@ const EditCourse = () => {
             // Reset form
             setEditingQuizQId(null);
             setQuizForm({
-                question: '', optionA: '', optionB: '', optionC: '', optionD: '', correctAnswer: 'A'
+                question: '', optionA: '', optionB: '', optionC: '', optionD: '', correctAnswer: ''
             });
 
         } catch (err) {
@@ -373,7 +373,7 @@ const EditCourse = () => {
     const handleCancelQuizEdit = () => {
         setEditingQuizQId(null);
         setQuizForm({
-            question: '', optionA: '', optionB: '', optionC: '', optionD: '', correctAnswer: 'A'
+            question: '', optionA: '', optionB: '', optionC: '', optionD: '', correctAnswer: ''
         });
     };
 
@@ -881,89 +881,120 @@ const EditCourse = () => {
 
             {activeTab === 'quiz' && (
                 <>
-                    <div className="card" style={{ marginBottom: '2rem' }}>
+                    <div className="card" style={{ marginBottom: '3rem', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)' }}>
                         <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
                             {editingQuizQId ? 'Edit Quiz Question' : 'Add New Quiz Question'}
                         </h3>
-                        <form onSubmit={handleSaveQuizQuestion}>
-                            <div className="form-group" style={{ marginBottom: '1rem' }}>
-                                <label style={{ fontSize: '1rem', fontWeight: 600 }}>Question Text</label>
-                                <textarea
-                                    required
-                                    rows="3"
-                                    placeholder="Enter quiz question here..."
-                                    value={quizForm.question}
-                                    onChange={(e) => setQuizForm({ ...quizForm, question: e.target.value })}
-                                    style={{ width: '100%', fontSize: '1rem', padding: '0.75rem', borderColor: 'var(--primary-color)', borderRadius: '4px' }}
-                                ></textarea>
+                        <form onSubmit={handleSaveQuizQuestion} style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start' }}>
+                            {/* Main Form Fields */}
+                            <div style={{ flex: '1 1 500px' }}>
+                                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                                    <label style={{ fontSize: '1rem', fontWeight: 600, display: 'block', marginBottom: '0.5rem' }}>Question Text</label>
+                                    <textarea
+                                        required
+                                        rows="3"
+                                        placeholder="Enter quiz question here..."
+                                        value={quizForm.question}
+                                        onChange={(e) => setQuizForm({ ...quizForm, question: e.target.value })}
+                                        style={{ width: '100%', fontSize: '1rem', padding: '0.75rem', borderColor: 'var(--border-color)', borderRadius: '4px' }}
+                                    ></textarea>
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                                    <div>
+                                        <label style={{ fontSize: '0.9rem', fontWeight: 600, display: 'block', marginBottom: '0.5rem' }}>Option A</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={quizForm.optionA}
+                                            onChange={(e) => setQuizForm({ ...quizForm, optionA: e.target.value })}
+                                            style={{ width: '75%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}
+                                            placeholder="Enter option A"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: '0.9rem', fontWeight: 600, display: 'block', marginBottom: '0.5rem' }}>Option B</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={quizForm.optionB}
+                                            onChange={(e) => setQuizForm({ ...quizForm, optionB: e.target.value })}
+                                            style={{ width: '75%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}
+                                            placeholder="Enter option B"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: '0.9rem', fontWeight: 600, display: 'block', marginBottom: '0.5rem' }}>Option C</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={quizForm.optionC}
+                                            onChange={(e) => setQuizForm({ ...quizForm, optionC: e.target.value })}
+                                            style={{ width: '75%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}
+                                            placeholder="Enter option C"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: '0.9rem', fontWeight: 600, display: 'block', marginBottom: '0.5rem' }}>Option D</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={quizForm.optionD}
+                                            onChange={(e) => setQuizForm({ ...quizForm, optionD: e.target.value })}
+                                            style={{ width: '75%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}
+                                            placeholder="Enter option D"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="form-group" style={{ marginBottom: '0' }}>
+                                    <label style={{ fontSize: '1rem', fontWeight: 600, display: 'block', marginBottom: '0.5rem' }}>Correct Answer</label>
+                                    <select
+                                        value={quizForm.correctAnswer}
+                                        onChange={(e) => setQuizForm({ ...quizForm, correctAnswer: e.target.value })}
+                                        style={{ width: '75%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)', color: quizForm.correctAnswer === '' ? '#9ca3af' : 'inherit' }}
+                                    >
+                                        <option value="" disabled>Select Correct Option</option>
+                                        <option value="A" style={{ color: 'var(--text-color)' }}>Option A</option>
+                                        <option value="B" style={{ color: 'var(--text-color)' }}>Option B</option>
+                                        <option value="C" style={{ color: 'var(--text-color)' }}>Option C</option>
+                                        <option value="D" style={{ color: 'var(--text-color)' }}>Option D</option>
+                                    </select>
+                                </div>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                                <div>
-                                    <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>Option A</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={quizForm.optionA}
-                                        onChange={(e) => setQuizForm({ ...quizForm, optionA: e.target.value })}
-                                        style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}
-                                    />
-                                </div>
-                                <div>
-                                    <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>Option B</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={quizForm.optionB}
-                                        onChange={(e) => setQuizForm({ ...quizForm, optionB: e.target.value })}
-                                        style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}
-                                    />
-                                </div>
-                                <div>
-                                    <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>Option C</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={quizForm.optionC}
-                                        onChange={(e) => setQuizForm({ ...quizForm, optionC: e.target.value })}
-                                        style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}
-                                    />
-                                </div>
-                                <div>
-                                    <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>Option D</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={quizForm.optionD}
-                                        onChange={(e) => setQuizForm({ ...quizForm, optionD: e.target.value })}
-                                        style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}
-                                    />
-                                </div>
-                            </div>
+                            {/* Action Side Panel */}
+                            <div className="card" style={{ flex: '0 0 300px', width: '100%', padding: '1.5rem', background: 'var(--bg-secondary)', position: 'sticky', top: '2rem', display: 'flex', flexDirection: 'column', margin: 0, alignSelf: 'flex-start' }}>
+                                <h4 style={{ fontSize: '1.1rem', marginBottom: '1.25rem', fontWeight: 600, borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>Actions</h4>
 
-                            <div className="form-group" style={{ marginBottom: '1.5rem', maxWidth: '300px' }}>
-                                <label style={{ fontSize: '1rem', fontWeight: 600 }}>Correct Answer</label>
-                                <select
-                                    value={quizForm.correctAnswer}
-                                    onChange={(e) => setQuizForm({ ...quizForm, correctAnswer: e.target.value })}
-                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}
-                                >
-                                    <option value="A">Option A</option>
-                                    <option value="B">Option B</option>
-                                    <option value="C">Option C</option>
-                                    <option value="D">Option D</option>
-                                </select>
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-                                <button type="submit" className="btn" disabled={actionLoading} style={{ fontWeight: 600 }}>
-                                    {editingQuizQId ? 'Update Quiz Question' : 'Save Quiz Question'}
-                                </button>
-                                {editingQuizQId && (
-                                    <button type="button" className="btn btn-secondary" onClick={handleCancelQuizEdit} disabled={actionLoading}>
-                                        Cancel Edit
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    <button type="submit" className="btn" disabled={actionLoading} style={{ fontWeight: 600, width: '100%', justifyContent: 'center', padding: '0.75rem' }}>
+                                        {editingQuizQId ? 'Update Question' : 'Save Question'}
                                     </button>
-                                )}
+
+                                    {editingQuizQId && (
+                                        <button type="button" className="btn btn-secondary" onClick={handleCancelQuizEdit} disabled={actionLoading} style={{ width: '100%', justifyContent: 'center', padding: '0.75rem' }}>
+                                            Cancel Edit
+                                        </button>
+                                    )}
+
+                                    {!editingQuizQId && (
+                                        <>
+
+
+                                            <input
+                                                type="file"
+                                                id="quiz-upload-side"
+                                                accept=".xlsx, .xls, .csv"
+                                                style={{ display: 'none' }}
+                                                onChange={handleQuizFileUpload}
+                                            />
+                                            <label htmlFor="quiz-upload-side" className="btn btn-secondary" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.75rem' }}>
+                                                <Upload size={18} /> Import from Excel
+                                            </label>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </form>
                     </div>
@@ -990,16 +1021,7 @@ const EditCourse = () => {
                                         <Trash2 size={16} /> Delete Selected ({selectedQuizQuestionIds.length})
                                     </button>
                                 )}
-                                <input
-                                    type="file"
-                                    id="quiz-upload"
-                                    accept=".xlsx, .xls, .csv"
-                                    style={{ display: 'none' }}
-                                    onChange={handleQuizFileUpload}
-                                />
-                                <label htmlFor="quiz-upload" className="btn btn-secondary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <Upload size={16} /> Import Quiz Questions
-                                </label>
+
                             </div>
                         </div>
                         <div>

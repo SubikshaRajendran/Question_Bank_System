@@ -207,10 +207,15 @@ const CourseView = () => {
                 body: JSON.stringify({ questionId: qId })
             });
             setReadQIds(prev => {
+                if (prev.includes(qId)) return prev;
+
                 const updated = [...prev, qId];
 
+                // Calculate how many questions from THIS course are read
+                const courseReadCount = questions.filter(q => updated.includes(q._id)).length;
+
                 // Enforce exact 100% completion match
-                if (questions.length > 0 && updated.length === questions.length) {
+                if (questions.length > 0 && courseReadCount === questions.length) {
                     setShowCompletionModal(true);
                     setAnimationStage('check');
 
@@ -234,15 +239,7 @@ const CourseView = () => {
         }
     };
 
-    // Auto-close modal
-    useEffect(() => {
-        if (showCompletionModal) {
-            const timer = setTimeout(() => {
-                setShowCompletionModal(false);
-            }, 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [showCompletionModal]);
+
 
     const markFlagged = async (qId) => {
         try {
