@@ -20,6 +20,8 @@ import QuizView from './pages/student/QuizView';
 import StudentComments from './pages/student/StudentComments';
 import StudentProfile from './pages/student/Profile';
 import Leaderboard from './pages/student/Leaderboard';
+import MyAttempts from './pages/student/MyAttempts';
+import CourseAttempts from './pages/student/CourseAttempts';
 
 import AdminDashboard from './pages/admin/Dashboard';
 import AddCourse from './pages/admin/AddCourse';
@@ -52,6 +54,8 @@ function App() {
               <Route path="student/comments" element={<StudentComments />} />
               <Route path="student/profile" element={<StudentProfile />} />
               <Route path="student/leaderboard" element={<Leaderboard />} />
+              <Route path="student/attempts" element={<MyAttempts />} />
+              <Route path="student/attempts/:courseId" element={<CourseAttempts />} />
               <Route path="course/:id" element={<CourseView />} />
               <Route path="student/course/:id/quiz" element={<QuizView />} />
             </Route>

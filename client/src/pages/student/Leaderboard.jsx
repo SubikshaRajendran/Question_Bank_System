@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { fetchApi } from '../../utils/api';
-import { Trophy, Medal, Award } from 'lucide-react';
+import { Trophy, Medal, Award, ClipboardList } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Leaderboard = () => {
     const { user } = useAuth();
     const [leaderboard, setLeaderboard] = useState([]);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const loadLeaderboard = async () => {
@@ -34,7 +36,28 @@ const Leaderboard = () => {
 
     return (
         <div className="container" style={{ maxWidth: '1000px', margin: '0 auto', paddingTop: '2rem', paddingBottom: '3rem' }}>
-            <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <div style={{ position: 'relative', textAlign: 'center', marginBottom: '3rem' }}>
+                {/* My Quiz History Button - Top Left */}
+                <button
+                    onClick={() => navigate('/student/attempts')}
+                    className="btn btn-secondary"
+                    title="My Quiz History"
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.5rem 1rem',
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--text-secondary)'
+                    }}
+                >
+                    <ClipboardList size={20} />
+                    My Quiz History
+                </button>
                 <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
                     <Trophy size={40} color="var(--warning)" /> Global Leaderboard
                 </h1>

@@ -332,12 +332,32 @@ router.get('/student/course/:courseId/attempts', async (req, res) => {
         const attempts = await QuizResult.find({
             studentId,
             courseId: req.params.courseId
-        }).sort({ date: -1 }); // Newest first
+        })
+            .populate('courseId', 'title image') // Added so CourseAttempts knows the title and image
+            .sort({ date: -1 }); // Newest first
 
         res.json(attempts);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Failed to fetch quiz attempts' });
+    }
+});
+
+// Fetch ALL quiz attempts for a student across all courses
+router.get('/student/attempts', async (req, res) => {
+    try {
+        const { studentId } = req.query;
+        if (!studentId) {
+            return res.status(400).json({ error: 'Student ID is required' });
+        }
+        const attempts = await QuizResult.find({ studentId })
+            .populate('courseId', 'title image') // Populate course title AND image
+            .sort({ date: -1 }); // Newest first
+
+        res.json(attempts);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch all quiz attempts' });
     }
 });
 
