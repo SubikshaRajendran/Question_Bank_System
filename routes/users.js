@@ -100,9 +100,19 @@ router.put('/admin/student/:id/block', async (req, res) => {
 
         student.isBlocked = isBlocked;
 
-        // If blocking, optionally log them out (reset isOnline)
+        // If blocking, log them out and reset their registration state
         if (isBlocked) {
             student.isOnline = false;
+            student.isVerified = false;
+            student.otp = undefined;
+            student.otpExpires = undefined;
+            student.needsReauthentication = true;
+        } else {
+            // Ensures users who were blocked BEFORE this new logic was implemented 
+            // still get the correct "needs reauthentication" message on their next login attempt.
+            if (!student.isVerified) {
+                student.needsReauthentication = true;
+            }
         }
 
         await student.save();
@@ -342,6 +352,24 @@ router.put('/:id/profile', upload.single('profilePicture'), async (req, res) => 
     } catch (err) {
         console.error("Profile Update Error:", err);
         res.status(500).json({ message: err.message });
+    }
+});
+
+// Dismiss Password Warning
+router.put('/student/:id/dismiss-password-warning', async (req, res) => {
+    try {
+        const student = await User.findById(req.params.id);
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+
+        student.showPasswordWarning = false;
+        await student.save();
+
+        res.json({ success: true, message: 'Password warning dismissed' });
+    } catch (err) {
+        console.error('Dismiss Password Warning Error:', err);
+        res.status(500).json({ success: false, message: err.message });
     }
 });
 

@@ -25,23 +25,28 @@ const Login = ({ mode }) => {
     const redirectPath = isStudent ? '/student/dashboard' : '/admin/dashboard';
 
     useEffect(() => {
-        if (isStudent) {
-            const storedFails = parseInt(localStorage.getItem('failedLoginAttempts') || '0');
-            const storedLockout = parseInt(localStorage.getItem('loginLockoutUntil') || '0');
+        if (isStudent && email) {
+            const emailKey = email.trim().toLowerCase();
+            const storedFails = parseInt(localStorage.getItem(`failedLoginAttempts_${emailKey}`) || '0');
+            const storedLockout = parseInt(localStorage.getItem(`loginLockoutUntil_${emailKey}`) || '0');
 
             if (storedLockout > Date.now()) {
                 setLockoutUntil(storedLockout);
                 setFailedAttempts(storedFails);
             } else if (storedLockout > 0) {
-                localStorage.removeItem('failedLoginAttempts');
-                localStorage.removeItem('loginLockoutUntil');
+                localStorage.removeItem(`failedLoginAttempts_${emailKey}`);
+                localStorage.removeItem(`loginLockoutUntil_${emailKey}`);
                 setFailedAttempts(0);
                 setLockoutUntil(null);
             } else {
                 setFailedAttempts(storedFails);
+                setLockoutUntil(null); // Clear lockout visually if switching from a locked email to a fresh one
             }
+        } else {
+            setFailedAttempts(0);
+            setLockoutUntil(null);
         }
-    }, [isStudent]);
+    }, [isStudent, email]);
 
     useEffect(() => {
         let timer;
@@ -50,14 +55,17 @@ const Login = ({ mode }) => {
                 if (Date.now() > lockoutUntil) {
                     setLockoutUntil(null);
                     setFailedAttempts(0);
-                    localStorage.removeItem('failedLoginAttempts');
-                    localStorage.removeItem('loginLockoutUntil');
+                    if (email) {
+                        const emailKey = email.trim().toLowerCase();
+                        localStorage.removeItem(`failedLoginAttempts_${emailKey}`);
+                        localStorage.removeItem(`loginLockoutUntil_${emailKey}`);
+                    }
                     clearInterval(timer);
                 }
             }, 1000);
         }
         return () => clearInterval(timer);
-    }, [lockoutUntil]);
+    }, [lockoutUntil, email]);
 
     const isLockedOut = lockoutUntil && lockoutUntil > Date.now();
 
@@ -76,9 +84,10 @@ const Login = ({ mode }) => {
             });
 
             if (data.success) {
-                if (isStudent) {
-                    localStorage.removeItem('failedLoginAttempts');
-                    localStorage.removeItem('loginLockoutUntil');
+                if (isStudent && email) {
+                    const emailKey = email.trim().toLowerCase();
+                    localStorage.removeItem(`failedLoginAttempts_${emailKey}`);
+                    localStorage.removeItem(`loginLockoutUntil_${emailKey}`);
                 }
                 login(data.user, isStudent ? 'student' : 'admin');
                 navigate(redirectPath);
@@ -98,15 +107,16 @@ const Login = ({ mode }) => {
             setShake(true);
             setTimeout(() => setShake(false), 500);
 
-            if (isStudent) {
+            if (isStudent && email) {
+                const emailKey = email.trim().toLowerCase();
                 const newFails = failedAttempts + 1;
                 setFailedAttempts(newFails);
-                localStorage.setItem('failedLoginAttempts', newFails.toString());
+                localStorage.setItem(`failedLoginAttempts_${emailKey}`, newFails.toString());
 
                 if (newFails >= 5) {
                     const lockTime = Date.now() + 5 * 60 * 1000;
                     setLockoutUntil(lockTime);
-                    localStorage.setItem('loginLockoutUntil', lockTime.toString());
+                    localStorage.setItem(`loginLockoutUntil_${emailKey}`, lockTime.toString());
                 }
             }
         } finally {

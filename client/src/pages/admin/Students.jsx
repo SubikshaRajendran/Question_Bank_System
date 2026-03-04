@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchApi } from '../../utils/api';
-import { Eye, Search, AlertCircle } from 'lucide-react';
+import { Eye, Search, AlertCircle, ShieldAlert } from 'lucide-react';
+import Toast from '../../components/Toast';
 
 const Students = () => {
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [filterTab, setFilterTab] = useState('All'); // 'All', 'Active', 'Blocked'
+    const [toast, setToast] = useState(null);
 
     const navigate = useNavigate();
 
@@ -40,10 +43,39 @@ const Students = () => {
         setSearchTerm(e.target.value);
     };
 
-    const filteredStudents = students.filter(student =>
-        student.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredStudents = students.filter(student => {
+        const matchesSearch = student.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            student.email?.toLowerCase().includes(searchTerm.toLowerCase());
+
+        let matchesTab = true;
+        if (filterTab === 'Active') {
+            matchesTab = !student.isBlocked;
+        } else if (filterTab === 'Blocked') {
+            matchesTab = student.isBlocked;
+        }
+
+        return matchesSearch && matchesTab;
+    });
+
+    const handleUnblock = async (studentId) => {
+        try {
+            const data = await fetchApi(`/users/admin/student/${studentId}/block`, {
+                method: 'PUT',
+                body: JSON.stringify({ isBlocked: false })
+            });
+
+            if (data.success) {
+                // Update local state to remove the block flag instantly
+                setStudents(students.map(s => s._id === studentId ? { ...s, isBlocked: false } : s));
+                setToast({ message: 'Student has been unblocked. The student must register again.', type: 'success' });
+            } else {
+                setToast({ message: data.message || 'Failed to unblock student', type: 'error' });
+            }
+        } catch (err) {
+            console.error('Failed to unblock student', err);
+            setToast({ message: err.message || 'Error occurred.', type: 'error' });
+        }
+    };
 
     const openDetailsPage = (studentId) => {
         navigate(`/admin/student/${studentId}`);
@@ -66,8 +98,12 @@ const Students = () => {
 
     return (
         <div className="container">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <h2 style={{ margin: 0 }}>Registered Students</h2>
+            {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <h2 style={{ margin: 0 }}>Registered Students</h2>
+                </div>
 
                 <div style={{ position: 'relative', width: '300px' }}>
                     <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
@@ -81,6 +117,39 @@ const Students = () => {
                         autoComplete="off"
                     />
                 </div>
+            </div>
+
+            {/* Filter Tabs */}
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                {['All', 'Active', 'Blocked'].map(tab => (
+                    <button
+                        key={tab}
+                        onClick={() => setFilterTab(tab)}
+                        style={{
+                            padding: '0.5rem 1rem',
+                            borderRadius: '9999px',
+                            border: 'none',
+                            background: filterTab === tab
+                                ? (tab === 'Blocked' ? '#fee2e2' : 'var(--primary-color)')
+                                : 'transparent',
+                            color: filterTab === tab
+                                ? (tab === 'Blocked' ? '#dc2626' : 'white')
+                                : 'var(--text-secondary)',
+                            fontWeight: filterTab === tab ? '600' : '500',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            transition: 'all 0.2s',
+                        }}
+                    >
+                        {tab === 'Blocked' && filterTab === tab && <ShieldAlert size={16} />}
+                        {tab}
+                        {tab === 'All' && <span style={{ background: filterTab === tab ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '9999px', fontSize: '0.75rem' }}>{students.length}</span>}
+                        {tab === 'Active' && <span style={{ background: filterTab === tab ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '9999px', fontSize: '0.75rem' }}>{students.filter(s => !s.isBlocked).length}</span>}
+                        {tab === 'Blocked' && <span style={{ background: filterTab === tab ? '#fca5a5' : 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '9999px', fontSize: '0.75rem' }}>{students.filter(s => s.isBlocked).length}</span>}
+                    </button>
+                ))}
             </div>
 
             {/* Stats Cards */}
@@ -173,13 +242,26 @@ const Students = () => {
 
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                         {student.isBlocked && (
-                                            <span style={{
-                                                fontSize: '0.85rem',
-                                                fontWeight: '600',
-                                                color: 'var(--danger)'
-                                            }}>
-                                                Blocked
-                                            </span>
+                                            <>
+                                                <span style={{
+                                                    fontSize: '0.85rem',
+                                                    fontWeight: '600',
+                                                    color: 'white',
+                                                    backgroundColor: 'var(--danger)',
+                                                    padding: '0.2rem 0.5rem',
+                                                    borderRadius: '4px'
+                                                }}>
+                                                    Blocked
+                                                </span>
+                                                <button
+                                                    onClick={() => handleUnblock(student._id)}
+                                                    className="btn btn-secondary"
+                                                    style={{ padding: '0.3rem 0.8rem', fontSize: '0.85rem' }}
+                                                    title="Unblock User"
+                                                >
+                                                    Unblock
+                                                </button>
+                                            </>
                                         )}
                                         <button
                                             onClick={() => openDetailsPage(student._id)}

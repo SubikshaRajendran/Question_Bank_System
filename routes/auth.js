@@ -113,12 +113,16 @@ router.post('/student/login', async (req, res) => {
             return res.status(401).json({ success: false, message: 'User not found. Please register first.' });
         }
 
-        if (!user.isVerified) {
-            return res.status(401).json({ success: false, message: 'Account not verified. Please complete registration.' });
-        }
-
         if (user.isBlocked) {
             return res.status(403).json({ success: false, message: 'Your account has been blocked. Please contact the administrator.' });
+        }
+
+        if (user.needsReauthentication) {
+            return res.status(401).json({ success: false, message: 'Account needs reauthentication. Please register again.' });
+        }
+
+        if (!user.isVerified) {
+            return res.status(401).json({ success: false, message: 'Account not verified. Please complete registration.' });
         }
 
         // Verify Password
@@ -165,6 +169,10 @@ router.post('/student/register-init', async (req, res) => {
             return res.status(400).json({ success: false, message: 'User already registered. Please login.' });
         }
 
+        if (user && user.isBlocked) {
+            return res.status(403).json({ success: false, message: 'Your account has been blocked. Please contact the administrator.' });
+        }
+
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
 
@@ -209,13 +217,36 @@ router.post('/student/register-verify', async (req, res) => {
         const user = await User.findOne({ email });
 
         if (!user) return res.status(400).json({ success: false, message: 'User not found' });
+        if (user.isBlocked) return res.status(403).json({ success: false, message: 'Your account has been blocked. Please contact the administrator.' });
         if (user.isVerified) return res.status(400).json({ success: false, message: 'User already verified' });
 
         if (!user.otp || !user.otpExpires) return res.status(400).json({ success: false, message: 'No OTP found' });
         if (user.otp !== otp) return res.status(400).json({ success: false, message: 'Invalid OTP' });
         if (user.otpExpires < new Date()) return res.status(400).json({ success: false, message: 'OTP expired' });
 
-        // OTP Valid - Do NOT clear it yet, we need it for Step 3
+        // If this user was previously blocked, we skip the password creation step
+        if (user.needsReauthentication) {
+            user.isVerified = true;
+            user.isOnline = true;
+            user.lastLogin = new Date();
+            user.needsReauthentication = false;
+            user.showPasswordWarning = true;
+            user.otp = undefined;
+            user.otpExpires = undefined;
+            await user.save();
+
+            const userObj = user.toObject();
+            delete userObj.password;
+
+            return res.json({
+                success: true,
+                message: 'Auto-verified for reauthentication',
+                needsReauthComplete: true,
+                user: userObj
+            });
+        }
+
+        // OTP Valid - Normal flow: Do NOT clear it yet, we need it for Step 3
         res.json({ success: true, message: 'OTP Verified' });
 
     } catch (err) {
@@ -260,6 +291,7 @@ router.post('/student/register-complete', async (req, res) => {
         user.isVerified = true;
         user.isOnline = true;
         user.lastLogin = new Date();
+        user.needsReauthentication = false;
         user.otp = undefined;
         user.otpExpires = undefined;
 
@@ -425,6 +457,10 @@ router.post('/student/resend-otp', async (req, res) => {
             return res.status(400).json({ success: false, message: 'User not found' });
         }
 
+        if (user.isBlocked) {
+            return res.status(403).json({ success: false, message: 'Your account has been blocked. Please contact the administrator.' });
+        }
+
         if (user.isVerified) {
             return res.status(400).json({ success: false, message: 'User already verified' });
         }
@@ -493,7 +529,10 @@ router.post('/student/heartbeat', async (req, res) => {
         if (!userId) return res.status(400).json({ error: 'User ID required' });
 
         const user = await User.findById(userId);
-        if (user && !user.isBlocked) {
+        if (user) {
+            if (user.isBlocked) {
+                return res.status(403).json({ success: false, message: 'Your account has been blocked. Please contact the administrator.' });
+            }
             user.isOnline = true;
             user.lastLogin = new Date(); // Update last active time to current
             await user.save();

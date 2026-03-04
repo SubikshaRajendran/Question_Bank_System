@@ -22,7 +22,9 @@ const UserSchema = new mongoose.Schema({
     otpExpires: { type: Date },
     resetPasswordOtp: { type: String },
     resetPasswordOtpExpires: { type: Date },
-    isBlocked: { type: Boolean, default: false }
+    isBlocked: { type: Boolean, default: false },
+    needsReauthentication: { type: Boolean, default: false },
+    showPasswordWarning: { type: Boolean, default: false }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema);

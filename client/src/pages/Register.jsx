@@ -66,7 +66,12 @@ const Register = () => {
             });
 
             if (data.success) {
-                setStep(3);
+                if (data.needsReauthComplete) {
+                    login(data.user, 'student');
+                    navigate('/student/dashboard');
+                } else {
+                    setStep(3);
+                }
             } else {
                 showError(data.message || 'Invalid OTP');
             }

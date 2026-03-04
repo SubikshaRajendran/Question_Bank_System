@@ -6,7 +6,7 @@ import { fetchApi } from '../utils/api';
 import logo from '../assets/logo.png';
 
 const Layout = () => {
-    const { user, logout } = useAuth();
+    const { user, login, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [showLoginMenu, setShowLoginMenu] = useState(false);
@@ -61,7 +61,11 @@ const Layout = () => {
                         body: JSON.stringify({ userId: user._id })
                     });
                 } catch (err) {
-                    // Ignore heartbeat failures silently
+                    // Force logout if account was blocked during active session
+                    if (err.message && err.message.toLowerCase().includes('blocked')) {
+                        logout();
+                        navigate('/account-blocked');
+                    }
                 }
             }
         };
@@ -105,6 +109,17 @@ const Layout = () => {
         }
     };
 
+    const dismissPasswordWarning = async () => {
+        if (!user) return;
+        try {
+            await fetchApi(`/users/student/${user._id}/dismiss-password-warning`, { method: 'PUT' });
+            // Optimistically update the context
+            login({ ...user, showPasswordWarning: false }, 'student');
+        } catch (err) {
+            console.error("Failed to dismiss password warning:", err);
+        }
+    };
+
     const handleLogout = () => {
         logout();
         navigate('/');
@@ -122,8 +137,23 @@ const Layout = () => {
                     </span>
                 </div>
 
-
-
+                {user?.showPasswordWarning && (
+                    <div className="password-warning-banner" style={{
+                        position: 'absolute', top: 'calc(100% + 10px)', right: '2rem',
+                        backgroundColor: '#fff3cd', color: '#856404', padding: '0.75rem 1.25rem',
+                        borderRadius: '8px', border: '1px solid #ffeeba',
+                        display: 'flex', alignItems: 'center', gap: '1rem',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 1000,
+                        animation: 'slideInRight 0.3s ease-out'
+                    }}>
+                        <span style={{ fontWeight: 500, fontSize: '0.95rem' }}>
+                            Your account has been reactivated. Please update your password in your <Link to="/student/profile" style={{ color: '#856404', textDecoration: 'underline', fontWeight: 600 }}>profile</Link>.
+                        </span>
+                        <button onClick={dismissPasswordWarning} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#856404', display: 'flex', opacity: 0.7, padding: '0.25rem' }} onMouseEnter={(e) => e.currentTarget.style.opacity = 1} onMouseLeave={(e) => e.currentTarget.style.opacity = 0.7} title="Dismiss">
+                            <X size={18} />
+                        </button>
+                    </div>
+                )}
                 {/* Mobile Menu Button */}
                 <button
                     className="mobile-menu-btn"
