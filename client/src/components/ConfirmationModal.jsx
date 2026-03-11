@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel, confirmText = 'Yes', cancelText = 'No' }) => {
+const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel, confirmText = 'Yes', cancelText = 'No', icon }) => {
     if (!isOpen) return null;
 
     return (
@@ -27,6 +27,7 @@ const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel, confir
                 textAlign: 'center',
                 border: 'var(--glass-border)'
             }}>
+                {icon && <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}>{icon}</div>}
                 <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.25rem' }}>{title}</h3>
                 <p style={{ marginBottom: '2rem', color: 'var(--text-secondary)' }}>{message}</p>
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>

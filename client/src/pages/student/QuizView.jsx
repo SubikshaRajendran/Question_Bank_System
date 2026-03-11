@@ -141,7 +141,7 @@ const QuizView = () => {
     if (!course) return <div className="container">Course not found.</div>;
 
     return (
-        <div className="container" style={{ maxWidth: '800px', margin: '0 auto', paddingTop: '2rem' }}>
+        <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', paddingTop: '2rem' }}>
 
             {/* Header */}
             <div style={{ marginBottom: '2rem' }}>
@@ -257,7 +257,7 @@ const QuizView = () => {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start', marginBottom: '3rem' }}>
 
                     {/* Left: Current Question Area */}
-                    <div style={{ flex: '1 1 400px', display: 'flex', flexDirection: 'column', gap: '1.5rem', minWidth: 0 }}>
+                    <div style={{ flex: '3 1 600px', display: 'flex', flexDirection: 'column', gap: '1.5rem', minWidth: 0 }}>
                         <div className="card" style={{ padding: '2rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 1.5rem 0', color: 'var(--text-secondary)', fontWeight: 600 }}>
                                 <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
@@ -346,7 +346,7 @@ const QuizView = () => {
                     </div>
 
                     {/* Right: Question Navigator Panel */}
-                    <div className="card" style={{ flex: '1 1 250px', position: 'sticky', top: '2rem', padding: '1.5rem' }}>
+                    <div className="card" style={{ flex: '1 1 250px', maxWidth: '350px', position: 'sticky', top: '100px', padding: '1.5rem', alignSelf: 'flex-start' }}>
                         <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem' }}>Navigator</h3>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                             <span>Answered: <strong style={{ color: 'var(--success)' }}>{Object.keys(answers).length}</strong></span>

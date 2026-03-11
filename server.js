@@ -8,11 +8,16 @@ const bcrypt = require('bcryptjs'); // Import bcryptjs
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
+const helmet = require('helmet');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
+app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false
+}));
 app.use(cors());
 app.use(express.json()); // Built-in parsing
 app.use(express.urlencoded({ extended: true }));

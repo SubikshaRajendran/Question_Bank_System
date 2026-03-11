@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { fetchApi } from '../../utils/api';
-import { Check, Flag, Trophy, Star, LayoutGrid, Eye, Clock } from 'lucide-react';
+import { Check, Flag, Trophy, Star, LayoutGrid, Eye, Clock, Download, AlertTriangle } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import jsPDF from 'jspdf';
 import ConfirmationModal from '../../components/ConfirmationModal';
 
 const CourseView = () => {
@@ -38,6 +39,12 @@ const CourseView = () => {
     const [showCompletionModal, setShowCompletionModal] = useState(false);
     const [showEarlyQuizModal, setShowEarlyQuizModal] = useState(false);
     const [animationStage, setAnimationStage] = useState('initial'); // 'initial', 'check', 'trophy'
+
+    // Download Modal State
+    const [showDownloadTypeModal, setShowDownloadTypeModal] = useState(false);
+    const [showSpecificDownloadModal, setShowSpecificDownloadModal] = useState(false);
+    const [downloadInput, setDownloadInput] = useState('');
+    const [downloadError, setDownloadError] = useState('');
 
     const handleAddComment = async (qId) => {
         if (!commentText.trim()) return;
@@ -253,6 +260,101 @@ const CourseView = () => {
         }
     };
 
+    const handleDownloadAll = () => {
+        generatePDF(questions);
+        setShowDownloadTypeModal(false);
+    };
+
+    const handleDownloadSpecific = () => {
+        try {
+            setDownloadError('');
+
+            if (!downloadInput.trim()) {
+                setDownloadError('Please enter question numbers.');
+                return;
+            }
+
+            const parts = downloadInput.split(',').map(p => p.trim()).filter(Boolean);
+            const indicesToInclude = new Set();
+            const numQuestions = questions.length;
+
+            for (const part of parts) {
+                if (part.includes('-')) {
+                    const [startStr, endStr] = part.split('-');
+                    const start = parseInt(startStr, 10);
+                    const end = parseInt(endStr, 10);
+
+                    if (isNaN(start) || isNaN(end) || start > end || start < 1 || end > numQuestions) {
+                        setDownloadError(`Invalid range: ${part}. Please enter valid numbers between 1 and ${numQuestions}.`);
+                        return;
+                    }
+                    for (let i = start; i <= end; i++) {
+                        indicesToInclude.add(i - 1);
+                    }
+                } else {
+                    const num = parseInt(part, 10);
+                    if (isNaN(num) || num < 1 || num > numQuestions) {
+                        setDownloadError(`Invalid number: ${part}. Please enter valid numbers between 1 and ${numQuestions}.`);
+                        return;
+                    }
+                    indicesToInclude.add(num - 1);
+                }
+            }
+
+            const selectedQuestions = Array.from(indicesToInclude).sort((a, b) => a - b).map(idx => questions[idx]);
+
+            if (selectedQuestions.length === 0) {
+                setDownloadError('No valid questions selected.');
+                return;
+            }
+
+            generatePDF(selectedQuestions);
+            setShowSpecificDownloadModal(false);
+            setDownloadInput('');
+        } catch (err) {
+            console.error('Failed to parse input:', err);
+            setDownloadError('Invalid format. Please check examples.');
+        }
+    };
+
+    const generatePDF = (selectedQuestions) => {
+        try {
+            const doc = new jsPDF();
+
+            doc.setFontSize(16);
+            doc.text(`${course.title} - Questions`, 14, 20);
+
+            doc.setFontSize(12);
+            let yPos = 30;
+            const pageHeight = doc.internal.pageSize.height;
+
+            selectedQuestions.forEach((q) => {
+                const tempDiv = document.createElement("div");
+                tempDiv.innerHTML = q.text;
+                const cleanText = tempDiv.textContent || tempDiv.innerText || "";
+
+                // Find original index
+                const originalIdx = questions.findIndex(origQ => origQ._id === q._id);
+
+                const lines = doc.splitTextToSize(`${originalIdx + 1}. ${cleanText}`, 180);
+
+                if (yPos + (lines.length * 7) > pageHeight - 20) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+
+                doc.text(lines, 14, yPos);
+                yPos += lines.length * 7 + 10; // Extra spacing between questions
+            });
+
+            const fileName = `${course.title.replace(/[^a-zA-Z0-9]/g, '_')}_Questions.pdf`;
+            doc.save(fileName);
+        } catch (err) {
+            console.error('Failed to generate PDF:', err);
+            alert('Failed to download PDF. Please try again.');
+        }
+    };
+
     if (loading) return <div className="container">Loading Course...</div>;
     if (!course) return <div className="container">Course not found</div>;
 
@@ -318,15 +420,24 @@ const CourseView = () => {
                             <p>No questions found matching your criteria.</p>
                         </div>
                     ) : (
-                        filteredQuestions.map(q => {
+                        filteredQuestions.map((q, index) => {
                             const isRead = readQIds.includes(q._id);
                             const isFlagged = flaggedQIds.includes(q._id);
+                            // Find the original index of the question for consistent numbering
+                            const originalIndex = questions.findIndex(origQ => origQ._id === q._id);
 
                             return (
                                 <div id={q._id} key={q._id} className="question-card" style={{ padding: '1.5rem', marginBottom: '1.5rem', boxShadow: 'var(--card-shadow)', border: 'var(--glass-border)', transition: 'transform 0.2s', backgroundColor: 'var(--card-bg)' }}>
-                                    <p dangerouslySetInnerHTML={{
-                                        __html: searchTerm ? q.text.replace(new RegExp(`(${searchTerm})`, 'gi'), '<span class="highlight">$1</span>') : q.text
-                                    }} style={{ margin: '0 0 1.5rem 0', fontSize: '1.1rem', color: 'var(--text-color)', lineHeight: '1.6' }}></p>
+                                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                                        <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--primary-color)', minWidth: '2rem' }}>
+                                            {originalIndex + 1}.
+                                        </span>
+                                        <div style={{ flex: 1 }}>
+                                            <p dangerouslySetInnerHTML={{
+                                                __html: searchTerm ? q.text.replace(new RegExp(`(${searchTerm})`, 'gi'), '<span class="highlight">$1</span>') : q.text
+                                            }} style={{ margin: '0 0 1.5rem 0', fontSize: '1.1rem', color: 'var(--text-color)', lineHeight: '1.6' }}></p>
+                                        </div>
+                                    </div>
 
                                     <div className="question-actions" style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap' }}>
                                         {isRead ? (
@@ -423,12 +534,20 @@ const CourseView = () => {
                         </p>
                     </div>
 
-                    {/* Sticky Take Quiz Button */}
+                    {/* Sticky Action Card */}
                     <div style={{
                         position: 'sticky',
                         top: '100px',
                         marginBottom: '2rem',
-                        zIndex: 10
+                        zIndex: 10,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '1rem',
+                        background: 'var(--card-bg)',
+                        padding: '1.5rem',
+                        borderRadius: '1rem',
+                        boxShadow: 'var(--card-shadow)',
+                        border: 'var(--glass-border)'
                     }}>
                         <button
                             className="btn"
@@ -436,10 +555,13 @@ const CourseView = () => {
                                 width: '100%',
                                 fontSize: '1.1rem',
                                 padding: '1rem',
-                                boxShadow: '0 4px 14px 0 rgba(79, 70, 229, 0.39)'
+                                boxShadow: '0 4px 14px 0 rgba(79, 70, 229, 0.39)',
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center'
                             }}
                             onClick={() => {
-                                if (readQIds.length < questions.length) {
+                                if (progress < 100 || totalQuestions === 0) {
                                     setShowEarlyQuizModal(true);
                                 } else {
                                     navigate(`/student/course/${course._id}/quiz`);
@@ -447,6 +569,46 @@ const CourseView = () => {
                             }}
                         >
                             Take Quiz Now
+                        </button>
+
+                        <button
+                            className="btn btn-secondary"
+                            style={{
+                                width: '100%',
+                                fontSize: '0.95rem',
+                                padding: '1rem 0.5rem',
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                backgroundColor: 'transparent',
+                                border: '2px solid transparent',
+                                backgroundImage: 'var(--primary-gradient), var(--primary-gradient)',
+                                backgroundOrigin: 'border-box',
+                                backgroundClip: 'padding-box, border-box',
+                                color: 'white',
+                                borderRadius: '0.75rem',
+                                fontWeight: '600',
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                whiteSpace: 'nowrap',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)'
+                            }}
+                            onMouseOver={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(79, 70, 229, 0.15)';
+                            }}
+                            onMouseOut={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.05)';
+                            }}
+                            onClick={() => {
+                                setShowDownloadTypeModal(true);
+                            }}
+                        >
+                            <Download size={18} color="white" style={{ flexShrink: 0 }} />
+                            <span>
+                                Download Questions
+                            </span>
                         </button>
                     </div>
 
@@ -614,16 +776,145 @@ const CourseView = () => {
             {/* Early Quiz Start Confirmation Modal */}
             <ConfirmationModal
                 isOpen={showEarlyQuizModal}
-                title="Start Quiz Early?"
-                message="You have not completed all the questions in this course. Are you sure you want to take the quiz now?"
+                title="Course Incomplete"
+                message="You haven't completed the course. Are you sure you want to take the quiz?"
+                icon={<AlertTriangle size={48} color="var(--warning, #f59e0b)" />}
                 onConfirm={() => {
                     setShowEarlyQuizModal(false);
                     navigate(`/student/course/${course._id}/quiz`);
                 }}
                 onCancel={() => setShowEarlyQuizModal(false)}
-                confirmText="Yes, take quiz"
-                cancelText="Cancel"
+                confirmText="Continue Anyway"
+                cancelText="Back to Course"
             />
+
+            {/* Download Type Modal */}
+            {showDownloadTypeModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 1000
+                }}>
+                    <div style={{
+                        background: 'var(--card-bg)',
+                        padding: '2rem',
+                        borderRadius: '1rem',
+                        width: '90%',
+                        maxWidth: '400px',
+                        boxShadow: 'var(--card-shadow)',
+                        textAlign: 'center'
+                    }}>
+                        <h3 style={{ marginBottom: '0.5rem', fontSize: '1.5rem', fontWeight: 'bold' }}>Download Questions</h3>
+                        <p style={{ marginBottom: '2rem', color: 'var(--text-secondary)' }}>
+                            Choose what you want to download.
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <button
+                                className="btn btn-primary"
+                                onClick={handleDownloadAll}
+                            >
+                                Download All Questions
+                            </button>
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => {
+                                    setShowDownloadTypeModal(false);
+                                    setDownloadInput('');
+                                    setDownloadError('');
+                                    setShowSpecificDownloadModal(true);
+                                }}
+                            >
+                                Select Specific Questions
+                            </button>
+                            <button
+                                className="btn"
+                                style={{ background: 'var(--bg-color)', color: 'var(--text-color)', border: '1px solid var(--border-color)' }}
+                                onClick={() => setShowDownloadTypeModal(false)}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Specific Download Modal */}
+            {showSpecificDownloadModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 1000
+                }}>
+                    <div style={{
+                        background: 'var(--card-bg)',
+                        padding: '2rem',
+                        borderRadius: '1rem',
+                        width: '90%',
+                        maxWidth: '500px',
+                        boxShadow: 'var(--card-shadow)'
+                    }}>
+                        <h3 style={{ marginBottom: '1rem', fontSize: '1.5rem', fontWeight: 'bold' }}>Download Specific Questions</h3>
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Examples:</label>
+                            <ul style={{ margin: '0 0 1rem 1rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                <li><code>2, 5, 8</code></li>
+                                <li><code>1-10</code></li>
+                                <li><code>1-5, 8, 10</code></li>
+                            </ul>
+                            <input
+                                type="text"
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    borderRadius: '0.5rem',
+                                    border: `1px solid ${downloadError ? 'var(--danger)' : 'var(--border-color)'}`,
+                                    background: 'var(--bg-color)',
+                                    color: 'var(--text-color)'
+                                }}
+                                placeholder="Example: 1-5, 8, 10"
+                                value={downloadInput}
+                                onChange={(e) => {
+                                    setDownloadInput(e.target.value);
+                                    if (downloadError) setDownloadError('');
+                                }}
+                            />
+                            {downloadError && (
+                                <p style={{ color: 'var(--danger)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                                    {downloadError}
+                                </p>
+                            )}
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => setShowSpecificDownloadModal(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="btn btn-primary"
+                                onClick={handleDownloadSpecific}
+                            >
+                                Download
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
