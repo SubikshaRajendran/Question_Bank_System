@@ -228,26 +228,31 @@ const Students = () => {
                                                 width: '45px',
                                                 height: '45px',
                                                 borderRadius: '50%',
-                                                background: 'var(--primary-gradient)',
+                                                background: isActive ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : '#94a3b8',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 color: 'white',
                                                 fontWeight: 'bold',
-                                                fontSize: '1.2rem'
+                                                fontSize: '1.2rem',
+                                                transition: 'all 0.3s ease'
                                             }}>
                                                 {student.username ? student.username.charAt(0).toUpperCase() : '?'}
                                             </div>
-                                            <div style={{
-                                                position: 'absolute',
-                                                bottom: '0',
-                                                right: '0',
-                                                width: '12px',
-                                                height: '12px',
-                                                borderRadius: '50%',
-                                                backgroundColor: isActive ? '#10b981' : '#94a3b8',
-                                                border: '2px solid var(--card-bg)'
-                                            }} />
+                                            <div 
+                                                className={isActive ? 'status-dot-pulse' : ''}
+                                                style={{
+                                                    position: 'absolute',
+                                                    bottom: '0',
+                                                    right: '0',
+                                                    width: '12px',
+                                                    height: '12px',
+                                                    borderRadius: '50%',
+                                                    backgroundColor: isActive ? '#10b981' : '#94a3b8',
+                                                    border: '2px solid var(--card-bg)',
+                                                    zIndex: 1
+                                                }} 
+                                            />
                                         </div>
                                         <div>
                                             <div style={{ fontWeight: '700', fontSize: '1.05rem', color: 'var(--text-color)' }}>

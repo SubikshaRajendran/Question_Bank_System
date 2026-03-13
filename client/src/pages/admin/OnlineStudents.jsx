@@ -126,7 +126,7 @@ const OnlineStudents = () => {
                                             width: '45px',
                                             height: '45px',
                                             borderRadius: '50%',
-                                            background: 'var(--primary-gradient)',
+                                            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
@@ -135,16 +135,20 @@ const OnlineStudents = () => {
                                         }}>
                                             {student.username ? student.username.charAt(0).toUpperCase() : '?'}
                                         </div>
-                                        <div style={{
-                                            position: 'absolute',
-                                            bottom: '0',
-                                            right: '0',
-                                            width: '12px',
-                                            height: '12px',
-                                            borderRadius: '50%',
-                                            backgroundColor: '#10b981',
-                                            border: '2px solid var(--card-bg)'
-                                        }} />
+                                        <div 
+                                            className="status-dot-pulse"
+                                            style={{
+                                                position: 'absolute',
+                                                bottom: '0',
+                                                right: '0',
+                                                width: '12px',
+                                                height: '12px',
+                                                borderRadius: '50%',
+                                                backgroundColor: '#10b981',
+                                                border: '2px solid var(--card-bg)',
+                                                zIndex: 1
+                                            }} 
+                                        />
                                     </div>
                                     <div>
                                         <div style={{ fontWeight: '700', fontSize: '1.05rem' }}>{student.username}</div>
