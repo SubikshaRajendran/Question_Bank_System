@@ -63,10 +63,11 @@ const SortableCourseItem = ({ course }) => {
 };
 
 const AdminDashboard = () => {
-    const [stats, setStats] = useState({ totalCourses: 0, totalQuestions: 0, totalStudents: 0 });
+    const [stats, setStats] = useState(null);
     const [courses, setCourses] = useState([]);
     const [filteredCourses, setFilteredCourses] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [statsLoading, setStatsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [difficultyFilter, setDifficultyFilter] = useState('');
     const [departmentFilter, setDepartmentFilter] = useState('');
@@ -86,11 +87,14 @@ const AdminDashboard = () => {
 
     useEffect(() => {
         const fetchStats = async () => {
+            setStatsLoading(true);
             try {
                 const statsData = await fetchApi('/analytics/admin/stats');
                 setStats(statsData);
             } catch (err) {
                 console.error("Failed to load admin stats", err);
+            } finally {
+                setStatsLoading(false);
             }
         };
         fetchStats();
@@ -202,10 +206,33 @@ const AdminDashboard = () => {
             {/* Stats */}
             <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem', maxWidth: '220px', margin: '0 auto 1.5rem auto' }}>
                 <div className="stat-card" style={{ background: 'var(--card-bg)', padding: '1rem', borderRadius: '0.75rem', boxShadow: 'var(--card-shadow)', textAlign: 'center' }}>
-                    <div className="stat-number" style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>{stats.totalCourses}</div>
+                    <div className="stat-number" style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary-color)', minHeight: '3rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {statsLoading ? (
+                            <div className="skeleton" style={{ width: '40px', height: '2.5rem', background: 'var(--bg-secondary)', borderRadius: '4px', animation: 'pulse 1.5s infinite ease-in-out' }}></div>
+                        ) : (
+                            stats?.totalCourses || 0
+                        )}
+                    </div>
                     <div className="stat-label" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Total Courses</div>
                 </div>
             </div>
+
+            <style>{`
+                @keyframes pulse {
+                    0% { opacity: 0.6; }
+                    50% { opacity: 0.3; }
+                    100% { opacity: 0.6; }
+                }
+                .skeleton {
+                    background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--border-color) 50%, var(--bg-secondary) 75%);
+                    background-size: 200% 100%;
+                    animation: shimmer 1.5s infinite;
+                }
+                @keyframes shimmer {
+                    0% { background-position: -200% 0; }
+                    100% { background-position: 200% 0; }
+                }
+            `}</style>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h2 className="section-header" style={{ marginBottom: 0 }}>Manage Courses</h2>

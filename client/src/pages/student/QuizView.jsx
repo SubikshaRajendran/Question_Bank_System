@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { fetchApi } from '../../utils/api';
 import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
 import Loader from '../../components/Loader';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import confetti from 'canvas-confetti';
 
 const QuizView = () => {
@@ -27,6 +28,7 @@ const QuizView = () => {
     const [showHistory, setShowHistory] = useState(false);
     const [history, setHistory] = useState([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
+    const [showSubmitModal, setShowSubmitModal] = useState(false);
 
     const getPerformanceColor = (level) => {
         switch (level) {
@@ -38,6 +40,36 @@ const QuizView = () => {
             default: return 'var(--text-secondary)';
         }
     };
+
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            // Only trigger if Enter is pressed
+            if (event.key === 'Enter') {
+                // Ignore if typing in an input, textarea, or select
+                const target = event.target;
+                if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
+                    return;
+                }
+
+                // Only trigger if a quiz is active and not submitted
+                if (!quizResult && questions.length > 0) {
+                    // If not on the last question, go to next
+                    if (currentQuestionIndex < questions.length - 1) {
+                        setCurrentQuestionIndex(prev => prev + 1);
+                    } else if (currentQuestionIndex === questions.length - 1) {
+                        // Optionally trigger submit if on the last question and an answer is selected
+                        // const qId = questions[currentQuestionIndex]._id;
+                        // if (answers[qId]) {
+                        //     handleSubmit();
+                        // }
+                    }
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [currentQuestionIndex, questions, quizResult, answers]);
 
     useEffect(() => {
         const loadData = async () => {
@@ -75,11 +107,13 @@ const QuizView = () => {
         // Validation check
         const unansweredCount = questions.length - Object.keys(answers).length;
         if (unansweredCount > 0) {
-            if (!window.confirm(`You have ${unansweredCount} unanswered questions. Are you sure you want to submit?`)) {
-                return;
-            }
+            setShowSubmitModal(true);
+            return;
         }
+        performSubmit();
+    };
 
+    const performSubmit = async () => {
         setIsSubmitting(true);
         try {
             const res = await fetchApi('/quiz/student/submit', {
@@ -120,6 +154,7 @@ const QuizView = () => {
             alert("Failed to submit quiz!");
         } finally {
             setIsSubmitting(false);
+            setShowSubmitModal(false);
         }
     };
 
@@ -440,6 +475,17 @@ const QuizView = () => {
                     </div>
                 </div>
             )}
+
+            {/* Submission Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showSubmitModal}
+                title="Unanswered Questions"
+                message={`You have ${questions.length - Object.keys(answers).length} unanswered questions. Are you sure you want to submit?`}
+                confirmText="Submit Anyway"
+                cancelText="Back to Quiz"
+                onConfirm={performSubmit}
+                onCancel={() => setShowSubmitModal(false)}
+            />
         </div>
     );
 };
