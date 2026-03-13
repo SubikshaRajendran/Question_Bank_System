@@ -1,77 +1,83 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
+import Loader from './components/Loader';
 
-import Landing from './pages/Landing';
-import About from './pages/About';
-import LoginSelection from './pages/LoginSelection';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
-import AccountBlocked from './pages/AccountBlocked';
+// Lazy loading pages
+const Landing = lazy(() => import('./pages/Landing'));
+const About = lazy(() => import('./pages/About'));
+const LoginSelection = lazy(() => import('./pages/LoginSelection'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const AccountBlocked = lazy(() => import('./pages/AccountBlocked'));
 
-import StudentDashboard from './pages/student/Dashboard';
-import MyCourses from './pages/student/MyCourses';
-import ReviewLater from './pages/student/ReviewLater';
-import CourseView from './pages/student/CourseView';
-import QuizView from './pages/student/QuizView';
-import StudentComments from './pages/student/StudentComments';
-import StudentProfile from './pages/student/Profile';
-import Leaderboard from './pages/student/Leaderboard';
-import MyAttempts from './pages/student/MyAttempts';
-import CourseAttempts from './pages/student/CourseAttempts';
+const StudentDashboard = lazy(() => import('./pages/student/Dashboard'));
+const MyCourses = lazy(() => import('./pages/student/MyCourses'));
+const ReviewLater = lazy(() => import('./pages/student/ReviewLater'));
+const CourseView = lazy(() => import('./pages/student/CourseView'));
+const QuizView = lazy(() => import('./pages/student/QuizView'));
+const StudentComments = lazy(() => import('./pages/student/StudentComments'));
+const StudentProfile = lazy(() => import('./pages/student/Profile'));
+const Leaderboard = lazy(() => import('./pages/student/Leaderboard'));
+const MyAttempts = lazy(() => import('./pages/student/MyAttempts'));
+const CourseAttempts = lazy(() => import('./pages/student/CourseAttempts'));
 
-import AdminDashboard from './pages/admin/Dashboard';
-import AddCourse from './pages/admin/AddCourse';
-import EditCourse from './pages/admin/EditCourse';
-import AdminComments from './pages/admin/AdminComments';
-import AdminProfile from './pages/admin/Profile';
-import AdminStudents from './pages/admin/Students';
-import AdminStudentProfile from './pages/admin/AdminStudentProfile';
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
+const AddCourse = lazy(() => import('./pages/admin/AddCourse'));
+const EditCourse = lazy(() => import('./pages/admin/EditCourse'));
+const AdminComments = lazy(() => import('./pages/admin/AdminComments'));
+const AdminProfile = lazy(() => import('./pages/admin/Profile'));
+const AdminStudents = lazy(() => import('./pages/admin/Students'));
+const AdminStudentProfile = lazy(() => import('./pages/admin/AdminStudentProfile'));
+const OnlineStudents = lazy(() => import('./pages/admin/OnlineStudents'));
 
 function App() {
   return (
     <Router>
       <AuthProvider>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Landing />} />
-            <Route path="about" element={<About />} />
-            <Route path="login" element={<LoginSelection />} />
-            <Route path="login/student" element={<Login mode="student" />} />
-            <Route path="login/admin" element={<Login mode="admin" />} />
-            <Route path="register" element={<Register />} />
-            <Route path="forgot-password" element={<ForgotPassword />} />
-            <Route path="account-blocked" element={<AccountBlocked />} />
+        <Suspense fallback={<Loader fullScreen message="Loading page..." />}>
+          <Routes>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Landing />} />
+              <Route path="about" element={<About />} />
+              <Route path="login" element={<LoginSelection />} />
+              <Route path="login/student" element={<Login mode="student" />} />
+              <Route path="login/admin" element={<Login mode="admin" />} />
+              <Route path="register" element={<Register />} />
+              <Route path="forgot-password" element={<ForgotPassword />} />
+              <Route path="account-blocked" element={<AccountBlocked />} />
 
-            {/* Student Routes */}
-            <Route element={<ProtectedRoute allowedRoles={['student']} />}>
-              <Route path="student/dashboard" element={<StudentDashboard />} />
-              <Route path="student/courses" element={<MyCourses />} />
-              <Route path="student/review" element={<ReviewLater />} />
-              <Route path="student/comments" element={<StudentComments />} />
-              <Route path="student/profile" element={<StudentProfile />} />
-              <Route path="student/leaderboard" element={<Leaderboard />} />
-              <Route path="student/attempts" element={<MyAttempts />} />
-              <Route path="student/attempts/:courseId" element={<CourseAttempts />} />
-              <Route path="course/:id" element={<CourseView />} />
-              <Route path="student/course/:id/quiz" element={<QuizView />} />
-            </Route>
+              {/* Student Routes */}
+              <Route element={<ProtectedRoute allowedRoles={['student']} />}>
+                <Route path="student/dashboard" element={<StudentDashboard />} />
+                <Route path="student/courses" element={<MyCourses />} />
+                <Route path="student/review" element={<ReviewLater />} />
+                <Route path="student/comments" element={<StudentComments />} />
+                <Route path="student/profile" element={<StudentProfile />} />
+                <Route path="student/leaderboard" element={<Leaderboard />} />
+                <Route path="student/attempts" element={<MyAttempts />} />
+                <Route path="student/attempts/:courseId" element={<CourseAttempts />} />
+                <Route path="course/:id" element={<CourseView />} />
+                <Route path="student/course/:id/quiz" element={<QuizView />} />
+              </Route>
 
-            {/* Admin Routes */}
-            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-              <Route path="admin/dashboard" element={<AdminDashboard />} />
-              <Route path="admin/students" element={<AdminStudents />} />
-              <Route path="admin/student/:id" element={<AdminStudentProfile />} /> {/* Added Dedicated Profile Route */}
-              <Route path="admin/profile" element={<AdminProfile />} />
-              <Route path="admin/course/new" element={<AddCourse />} />
-              <Route path="admin/course/edit/:id" element={<EditCourse />} />
-              <Route path="admin/comments" element={<AdminComments />} />
+              {/* Admin Routes */}
+              <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+                <Route path="admin/dashboard" element={<AdminDashboard />} />
+                <Route path="admin/students" element={<AdminStudents />} />
+                <Route path="admin/students/online" element={<OnlineStudents />} />
+                <Route path="admin/student/:id" element={<AdminStudentProfile />} /> {/* Added Dedicated Profile Route */}
+                <Route path="admin/profile" element={<AdminProfile />} />
+                <Route path="admin/course/new" element={<AddCourse />} />
+                <Route path="admin/course/edit/:id" element={<EditCourse />} />
+                <Route path="admin/comments" element={<AdminComments />} />
+              </Route>
             </Route>
-          </Route>
-        </Routes>
+          </Routes>
+        </Suspense>
       </AuthProvider>
     </Router>
   );

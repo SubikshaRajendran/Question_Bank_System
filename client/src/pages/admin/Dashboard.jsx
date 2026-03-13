@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { fetchApi } from '../../utils/api';
 import { Search, Plus, Trash2, Edit, BookOpen, Filter, GripVertical, Save, X, ArrowUpDown, User } from 'lucide-react'; // Added User icon
 import Toast from '../../components/Toast';
+import Loader from '../../components/Loader';
 import {
     DndContext,
     closestCenter,
@@ -70,6 +71,7 @@ const AdminDashboard = () => {
     const [difficultyFilter, setDifficultyFilter] = useState('');
     const [departmentFilter, setDepartmentFilter] = useState('');
     const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
     const [isReorderMode, setIsReorderMode] = useState(false); // New state for Reorder Mode
     const [toast, setToast] = useState(null); // Toast state
 
@@ -83,50 +85,52 @@ const AdminDashboard = () => {
     );
 
     useEffect(() => {
-        loadData();
+        const fetchStats = async () => {
+            try {
+                const statsData = await fetchApi('/analytics/admin/stats');
+                setStats(statsData);
+            } catch (err) {
+                console.error("Failed to load admin stats", err);
+            }
+        };
+        fetchStats();
     }, []);
 
-    const loadData = async () => {
-        try {
-            const [statsData, coursesData] = await Promise.all([
-                fetchApi('/analytics/admin/stats'),
-                fetchApi('/courses')
-            ]);
-            setStats(statsData);
-            setCourses(coursesData);
-            setFilteredCourses(coursesData);
-        } catch (err) {
-            console.error("Failed to load admin data", err);
-            setToast({ message: 'Failed to load data', type: 'error' });
-        } finally {
-            setLoading(false);
-        }
-    };
+    useEffect(() => {
+        const fetchCourses = async () => {
+            setLoading(true);
+            try {
+                // If reordering, fetch all courses (no pagination)
+                const limitQuery = isReorderMode ? 1000 : itemsPerPage;
+                let url = `/courses?page=${page}&limit=${limitQuery}`;
+                if (searchTerm) url += `&search=${encodeURIComponent(searchTerm)}`;
+                if (difficultyFilter) url += `&difficulty=${encodeURIComponent(difficultyFilter)}`;
+                if (departmentFilter) url += `&department=${encodeURIComponent(departmentFilter)}`;
+
+                const data = await fetchApi(url);
+                setCourses(data.courses || []);
+                setFilteredCourses(data.courses || []);
+                setTotalPages(data.totalPages || 1);
+            } catch (err) {
+                console.error("Failed to load courses", err);
+                setToast({ message: 'Failed to load courses', type: 'error' });
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const debounce = setTimeout(() => {
+            fetchCourses();
+        }, 300);
+
+        return () => clearTimeout(debounce);
+    }, [page, searchTerm, difficultyFilter, departmentFilter, isReorderMode]);
 
     useEffect(() => {
-        let result = courses;
-
-        // Search Filter
-        if (searchTerm) {
-            const term = searchTerm.toLowerCase();
-            result = result.filter(c => c.title.toLowerCase().includes(term));
-        }
-
-        // Difficulty Filter
-        if (difficultyFilter) {
-            result = result.filter(c => c.difficulty === difficultyFilter);
-        }
-
-        // Department Filter
-        if (departmentFilter) {
-            result = result.filter(c => c.department === departmentFilter);
-        }
-
-        setFilteredCourses(result);
         if (!isReorderMode) {
-            setPage(1);
+            setPage(1); // Reset page on filter changes (handled by the fetch useEffect implicitly, but here we explicitly reset it when filters change if we want)
         }
-    }, [searchTerm, difficultyFilter, departmentFilter, courses, isReorderMode]);
+    }, [searchTerm, difficultyFilter, departmentFilter]);
 
     const handleDragEnd = (event) => {
         const { active, over } = event;
@@ -147,11 +151,9 @@ const AdminDashboard = () => {
             setDifficultyFilter('');
             setDepartmentFilter('');
             setIsReorderMode(true);
-            setFilteredCourses(courses); // Reset filters to show all
         } else {
             // Turning OFF (Cancel)
             setIsReorderMode(false);
-            loadData(); // Revert changes by reloading
         }
     };
 
@@ -174,10 +176,9 @@ const AdminDashboard = () => {
         }
     };
 
-    const totalPages = Math.ceil(filteredCourses.length / itemsPerPage);
-    const displayedCourses = isReorderMode ? courses : filteredCourses.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+    const displayedCourses = isReorderMode ? courses : filteredCourses;
 
-    if (loading) return <div className="container">Loading Dashboard...</div>;
+    if (loading) return <Loader message="Loading Dashboard..." />;
 
     return (
         <div className="container">

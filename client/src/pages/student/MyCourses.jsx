@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { fetchApi } from '../../utils/api';
 import CourseCard from '../../components/CourseCard';
 import { Sparkles, BookOpen, CheckCircle } from 'lucide-react';
+import Loader from '../../components/Loader';
 
 const MyCourses = () => {
     const { user } = useAuth();
@@ -26,7 +27,7 @@ const MyCourses = () => {
         loadCourses();
     }, [user]);
 
-    if (loading) return <div className="container">Loading...</div>;
+    if (loading) return <Loader />;
 
     const counts = {
         new: courses.filter(c => (c.progress || 0) === 0).length,

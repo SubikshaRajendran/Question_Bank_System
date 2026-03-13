@@ -5,6 +5,7 @@ import { fetchApi } from '../../utils/api';
 import { Trash2, AlertTriangle, ArrowLeft, Save, X, Edit2, Upload } from 'lucide-react';
 import Toast from '../../components/Toast';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import Loader from '../../components/Loader';
 
 const EditCourse = () => {
     const { id } = useParams();
@@ -550,7 +551,7 @@ const EditCourse = () => {
         }
     };
 
-    if (loading) return <div className="container" style={{ textAlign: 'center', marginTop: '4rem' }}>Loading...</div>;
+    if (loading) return <Loader />;
     if (!course) return <div className="container">Course not found</div>;
 
     return (

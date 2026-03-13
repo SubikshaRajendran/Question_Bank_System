@@ -54,14 +54,62 @@ router.get('/', async (req, res) => {
 // Admin Route: Get all students for Students Management Page (Sorted A-Z)
 router.get('/admin/students', async (req, res) => {
     try {
+        const { search, page = 1, limit = 10, filter = 'All' } = req.query;
+        let query = { role: 'student' };
+
+        if (search) {
+            query.$or = [
+                { username: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } },
+                { fullName: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        if (filter === 'Active') {
+            query.isBlocked = { $ne: true };
+        } else if (filter === 'Blocked') {
+            query.isBlocked = true;
+        } else if (filter === 'Online') {
+            const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+            query.isOnline = true;
+            query.lastLogin = { $gte: twoMinutesAgo };
+        }
+
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
         // Find all students, selecting only the necessary fields
-        const students = await User.find({ role: 'student' })
+        const students = await User.find(query)
             .select('username email department isBlocked createdAt lastLogin isVerified isOnline profilePicture fullName phoneNumber rollNumber')
             // Sort case-insensitively by username A-Z
             .collation({ locale: 'en' })
-            .sort({ username: 1 });
+            .sort({ username: 1 })
+            .skip(skip)
+            .limit(parseInt(limit));
+            
+        const total = await User.countDocuments(query);
+        const totalActive = await User.countDocuments({ role: 'student', isBlocked: { $ne: true } });
+        const totalBlocked = await User.countDocuments({ role: 'student', isBlocked: true });
+        const grantTotal = await User.countDocuments({ role: 'student' });
+        
+        const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+        const totalOnline = await User.countDocuments({ 
+            role: 'student', 
+            isOnline: true, 
+            lastLogin: { $gte: twoMinutesAgo } 
+        });
 
-        res.json(students);
+        res.json({
+            students,
+            totalPages: Math.ceil(total / parseInt(limit)),
+            currentPage: parseInt(page),
+            totalInView: total,
+            counts: {
+                All: grantTotal,
+                Active: totalActive,
+                Blocked: totalBlocked,
+                Online: totalOnline
+            }
+        });
     } catch (err) {
         console.error('Error fetching students for admin:', err);
         res.status(500).json({ error: err.message });

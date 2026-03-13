@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { fetchApi } from '../../utils/api';
 import { Link, useLocation } from 'react-router-dom';
 import { Plus, X, MessageCircleQuestion, MessageSquare } from 'lucide-react';
+import Loader from '../../components/Loader';
 
 const StudentComments = () => {
     const { user } = useAuth();
@@ -84,7 +85,7 @@ const StudentComments = () => {
     const questionDoubts = comments.filter(c => c.type !== 'general' && c.questionId);
     const generalComments = comments.filter(c => c.type === 'general');
 
-    if (loading) return <div className="container">Loading comments...</div>;
+    if (loading) return <Loader message="Loading comments..." />;
 
     return (
         <div className="container">

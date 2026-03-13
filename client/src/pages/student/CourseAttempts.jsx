@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { fetchApi } from '../../utils/api';
 import { History, BookOpen, CheckCircle, XCircle, ChevronDown, Calendar, ChevronLeft, ChevronRight, Eye, ArrowLeft } from 'lucide-react';
+import Loader from '../../components/Loader';
 
 const CourseAttempts = () => {
     const { user } = useAuth();
@@ -79,7 +80,7 @@ const CourseAttempts = () => {
     };
 
     if (loading) {
-        return <div className="container" style={{ marginTop: '3rem', textAlign: 'center' }}>Loading Quiz Attempts...</div>;
+        return <Loader message="Loading Quiz Attempts..." />;
     }
 
     return (

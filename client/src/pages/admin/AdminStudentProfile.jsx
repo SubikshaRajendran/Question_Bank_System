@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { fetchApi } from '../../utils/api';
 import { ArrowLeft, UserCheck, ShieldBan, AlertCircle, User } from 'lucide-react';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import Loader from '../../components/Loader';
 
 const AdminStudentProfile = () => {
     const { id } = useParams();
@@ -92,15 +93,7 @@ const AdminStudentProfile = () => {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="container" style={{ textAlign: 'center', padding: '4rem' }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
-                    <span className="spinner"></span> Loading student profile...
-                </div>
-            </div>
-        );
-    }
+    if (loading) return <Loader message="Loading student profile..." />;
 
     if (error || !student) {
         return (

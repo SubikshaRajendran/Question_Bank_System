@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { fetchApi } from '../../utils/api';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { Eye, Trash2, X, MessageCircleQuestion, MessageSquare } from 'lucide-react';
+import Loader from '../../components/Loader';
 
 const AdminComments = () => {
     const location = useLocation();
@@ -84,7 +85,7 @@ const AdminComments = () => {
         return acc;
     }, {});
 
-    if (loading) return <div className="container">Loading comments...</div>;
+    if (loading) return <Loader message="Loading comments..." />;
 
     const renderCommentCard = (c) => (
         <div key={c._id} className="card">

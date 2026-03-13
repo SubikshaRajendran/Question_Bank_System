@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { fetchApi } from '../../utils/api';
 import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+import Loader from '../../components/Loader';
 import confetti from 'canvas-confetti';
 
 const QuizView = () => {
@@ -137,7 +138,7 @@ const QuizView = () => {
         }
     };
 
-    if (loading) return <div className="container" style={{ marginTop: '3rem', textAlign: 'center' }}>Loading Quiz Details...</div>;
+    if (loading) return <Loader fullScreen message="Loading Quiz Details..." />;
     if (!course) return <div className="container">Course not found.</div>;
 
     return (

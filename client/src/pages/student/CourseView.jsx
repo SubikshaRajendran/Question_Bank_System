@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { fetchApi } from '../../utils/api';
 import { Check, Flag, Trophy, Star, LayoutGrid, Eye, Clock, Download, AlertTriangle } from 'lucide-react';
+import Loader from '../../components/Loader';
 import confetti from 'canvas-confetti';
 import jsPDF from 'jspdf';
 import ConfirmationModal from '../../components/ConfirmationModal';
@@ -355,7 +356,7 @@ const CourseView = () => {
         }
     };
 
-    if (loading) return <div className="container">Loading Course...</div>;
+    if (loading) return <Loader fullScreen message="Loading Course..." />;
     if (!course) return <div className="container">Course not found</div>;
 
     return (

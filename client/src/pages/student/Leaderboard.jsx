@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { fetchApi } from '../../utils/api';
 import { Trophy, Medal, Award, ClipboardList } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import Loader from '../../components/Loader';
 
 const Leaderboard = () => {
     const { user } = useAuth();
@@ -28,7 +29,7 @@ const Leaderboard = () => {
     }, [user]);
 
     if (loading) {
-        return <div className="container" style={{ marginTop: '3rem', textAlign: 'center' }}>Loading Leaderboard...</div>;
+        return <Loader message="Loading Leaderboard..." />;
     }
 
     const topThree = leaderboard.slice(0, 3);

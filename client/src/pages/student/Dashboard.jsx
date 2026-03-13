@@ -4,6 +4,7 @@ import { fetchApi } from '../../utils/api';
 import CourseCard from '../../components/CourseCard';
 import { Search, Filter, User, Bell, Trophy } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import Loader from '../../components/Loader';
 
 const StudentDashboard = () => {
     const { user } = useAuth();
@@ -116,7 +117,7 @@ const StudentDashboard = () => {
     };
 
     if (loading) {
-        return <div className="container" style={{ textAlign: 'center', marginTop: '4rem' }}>Loading courses...</div>;
+        return <Loader message="Loading courses..." />;
     }
 
     return (

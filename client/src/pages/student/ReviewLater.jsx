@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { fetchApi } from '../../utils/api';
 import { Link } from 'react-router-dom';
 import { Flag, ArrowRight, BookOpen, Trash2, ArrowLeft, ExternalLink } from 'lucide-react';
+import Loader from '../../components/Loader';
 
 const ReviewLater = () => {
     const { user } = useAuth();
@@ -56,7 +57,7 @@ const ReviewLater = () => {
 
     const courseList = Object.values(questionsByCourse);
 
-    if (loading) return <div className="container" style={{ paddingTop: '2rem', textAlign: 'center' }}>Loading...</div>;
+    if (loading) return <Loader />;
 
     // View: Specific Course Questions
     if (selectedCourseId) {

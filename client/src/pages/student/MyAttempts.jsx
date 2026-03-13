@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { fetchApi } from '../../utils/api';
 import { History, BookOpen, ArrowLeft, Trophy, Activity } from 'lucide-react';
+import Loader from '../../components/Loader';
 
 const MyAttempts = () => {
     const { user } = useAuth();
@@ -51,7 +52,7 @@ const MyAttempts = () => {
     }, [user]);
 
     if (loading) {
-        return <div className="container" style={{ marginTop: '3rem', textAlign: 'center' }}>Loading Courses...</div>;
+        return <Loader message="Loading Courses..." />;
     }
 
     return (

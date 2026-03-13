@@ -3,19 +3,27 @@ import { useNavigate } from 'react-router-dom';
 import { fetchApi } from '../../utils/api';
 import { Eye, Search, AlertCircle, ShieldAlert } from 'lucide-react';
 import Toast from '../../components/Toast';
+import Loader from '../../components/Loader';
 
 const Students = () => {
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterTab, setFilterTab] = useState('All'); // 'All', 'Active', 'Blocked'
+    const [filterTab, setFilterTab] = useState('All'); // 'All', 'Active' (Enabled), 'Blocked'
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [counts, setCounts] = useState({ All: 0, Active: 0, Blocked: 0 });
     const [toast, setToast] = useState(null);
 
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Initial load
+        setPage(1);
+    }, [searchTerm, filterTab]);
+
+    useEffect(() => {
+        // Initial load and whenever dependencies change
         fetchStudents();
 
         // Auto-refresh every 10 seconds silently for real-time activity status
@@ -24,18 +32,20 @@ const Students = () => {
         }, 10000);
 
         return () => clearInterval(intervalId);
-    }, []);
+    }, [page, searchTerm, filterTab]);
 
     const fetchStudents = async (showLoading = true) => {
         try {
             if (showLoading) setLoading(true);
-            const data = await fetchApi('/users/admin/students');
-            setStudents(data);
+            const data = await fetchApi(`/users/admin/students?page=${page}&limit=10&search=${encodeURIComponent(searchTerm)}&filter=${filterTab}`);
+            setStudents(data.students || []);
+            setTotalPages(data.totalPages || 1);
+            setCounts(data.counts || { All: 0, Active: 0, Blocked: 0 });
         } catch (err) {
             console.error('Failed to fetch students:', err);
             setError('Failed to load students.');
         } finally {
-            setLoading(false);
+            if (showLoading) setLoading(false);
         }
     };
 
@@ -43,19 +53,7 @@ const Students = () => {
         setSearchTerm(e.target.value);
     };
 
-    const filteredStudents = students.filter(student => {
-        const matchesSearch = student.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            student.email?.toLowerCase().includes(searchTerm.toLowerCase());
-
-        let matchesTab = true;
-        if (filterTab === 'Active') {
-            matchesTab = !student.isBlocked;
-        } else if (filterTab === 'Blocked') {
-            matchesTab = student.isBlocked;
-        }
-
-        return matchesSearch && matchesTab;
-    });
+    const filteredStudents = students; // Filtering is now done on server side
 
     const handleUnblock = async (studentId) => {
         try {
@@ -81,20 +79,11 @@ const Students = () => {
         navigate(`/admin/student/${studentId}`);
     };
 
-    const getStats = () => {
-        const now = new Date();
-        const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).getTime();
-
-        const activeNow = students.filter(student =>
-            student.isOnline && student.lastLogin && (new Date() - new Date(student.lastLogin) < 2 * 60 * 1000)
-        ).length;
-
-        const activeWeek = students.filter(s => s.lastLogin && new Date(s.lastLogin).getTime() >= weekStart).length;
-
-        return { total: students.length, activeNow, activeWeek };
+    const stats = {
+        total: counts.All,
+        activeNow: counts.Online, // Use backend count instead of local filtering
+        activeWeek: counts.Active // Approximate or we could fetch more specific stats
     };
-
-    const stats = getStats();
 
     return (
         <div className="container">
@@ -120,34 +109,52 @@ const Students = () => {
             </div>
 
             {/* Filter Tabs */}
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+            <div style={{ 
+                display: 'flex', 
+                gap: '0.75rem', 
+                marginBottom: '2.5rem', 
+                background: 'rgba(0,0,0,0.03)', 
+                padding: '0.4rem', 
+                borderRadius: '1rem',
+                width: 'fit-content',
+                boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)',
+                border: '1px solid var(--border-color)'
+            }}>
                 {['All', 'Active', 'Blocked'].map(tab => (
                     <button
                         key={tab}
                         onClick={() => setFilterTab(tab)}
                         style={{
-                            padding: '0.5rem 1rem',
-                            borderRadius: '9999px',
+                            padding: '0.75rem 1.75rem',
+                            borderRadius: '0.75rem',
                             border: 'none',
                             background: filterTab === tab
-                                ? (tab === 'Blocked' ? '#fee2e2' : 'var(--primary-color)')
+                                ? (tab === 'Blocked' ? '#ef4444' : 'var(--primary-color)')
                                 : 'transparent',
-                            color: filterTab === tab
-                                ? (tab === 'Blocked' ? '#dc2626' : 'white')
-                                : 'var(--text-secondary)',
-                            fontWeight: filterTab === tab ? '600' : '500',
+                            color: filterTab === tab ? 'white' : 'var(--text-secondary)',
+                            fontWeight: '600',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '0.5rem',
-                            transition: 'all 0.2s',
+                            gap: '0.75rem',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            boxShadow: filterTab === tab ? '0 4px 12px rgba(0,0,0,0.15)' : 'none',
+                            fontSize: '1rem',
+                            transform: filterTab === tab ? 'scale(1.02)' : 'scale(1)'
                         }}
                     >
-                        {tab === 'Blocked' && filterTab === tab && <ShieldAlert size={16} />}
-                        {tab}
-                        {tab === 'All' && <span style={{ background: filterTab === tab ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '9999px', fontSize: '0.75rem' }}>{students.length}</span>}
-                        {tab === 'Active' && <span style={{ background: filterTab === tab ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '9999px', fontSize: '0.75rem' }}>{students.filter(s => !s.isBlocked).length}</span>}
-                        {tab === 'Blocked' && <span style={{ background: filterTab === tab ? '#fca5a5' : 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '9999px', fontSize: '0.75rem' }}>{students.filter(s => s.isBlocked).length}</span>}
+                        {tab === 'Blocked' && filterTab === tab && <ShieldAlert size={18} />}
+                        {tab === 'Active' ? 'Enabled' : tab}
+                        <span style={{ 
+                            background: filterTab === tab ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.1)', 
+                            padding: '0.2rem 0.6rem', 
+                            borderRadius: '9999px', 
+                            fontSize: '0.8rem',
+                            fontWeight: '700',
+                            marginLeft: '0.25rem'
+                        }}>
+                            {tab === 'All' ? counts.All : tab === 'Active' ? counts.Active : counts.Blocked}
+                        </span>
                     </button>
                 ))}
             </div>
@@ -158,8 +165,22 @@ const Students = () => {
                     <div style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600' }}>Total Students</div>
                     <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-color)' }}>{stats.total}</div>
                 </div>
-                <div className="stat-card" style={{ background: 'var(--card-bg)', padding: '1.5rem', borderRadius: '1rem', boxShadow: 'var(--card-shadow)', border: 'var(--glass-border)' }}>
-                    <div style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600' }}>Active Now</div>
+                <div 
+                    className="stat-card" 
+                    onClick={() => navigate('/admin/students/online')}
+                    style={{ 
+                        background: 'var(--card-bg)', 
+                        padding: '1.5rem', 
+                        borderRadius: '1rem', 
+                        boxShadow: 'var(--card-shadow)', 
+                        border: 'var(--glass-border)',
+                        cursor: 'pointer',
+                        transition: 'transform 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                    <div style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600' }}>Online Now</div>
                     <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#10b981' }}>{stats.activeNow}</div>
                 </div>
                 <div className="stat-card" style={{ background: 'var(--card-bg)', padding: '1.5rem', borderRadius: '1rem', boxShadow: 'var(--card-shadow)', border: 'var(--glass-border)' }}>
@@ -171,10 +192,8 @@ const Students = () => {
             {/* Student List (Card Style) */}
             <div className="student-list">
                 {loading ? (
-                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span className="spinner"></span> Loading students...
-                        </div>
+                    <div style={{ padding: '4rem 0', position: 'relative' }}>
+                        <Loader message="Loading students..." />
                     </div>
                 ) : error ? (
                     <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--danger)' }}>{error}</div>
@@ -290,6 +309,29 @@ const Students = () => {
                     </div>
                 )}
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="pagination-controls" style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '2rem', marginBottom: '2rem', alignItems: 'center' }}>
+                    <button
+                        className="page-btn"
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        style={{ padding: '0.5rem 1rem', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.5 : 1 }}
+                    >
+                        Previous
+                    </button>
+                    <span>Page {page} of {totalPages}</span>
+                    <button
+                        className="page-btn"
+                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                        disabled={page === totalPages}
+                        style={{ padding: '0.5rem 1rem', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.5 : 1 }}
+                    >
+                        Next
+                    </button>
+                </div>
+            )}
 
         </div>
     );

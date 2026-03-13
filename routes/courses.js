@@ -62,7 +62,7 @@ const streamUpload = (req) => {
 // Get all courses with filtering
 router.get('/', async (req, res) => {
     try {
-        const { search, difficulty, tags } = req.query;
+        const { search, difficulty, tags, page = 1, limit = 10 } = req.query;
         let query = {};
 
         if (search) {
@@ -79,8 +79,16 @@ router.get('/', async (req, res) => {
             query.tags = { $in: tagList };
         }
 
-        const courses = await Course.find(query).sort({ order: 1 });
-        res.json(courses);
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const courses = await Course.find(query).sort({ order: 1 }).skip(skip).limit(parseInt(limit));
+        const total = await Course.countDocuments(query);
+
+        res.json({
+            courses,
+            totalPages: Math.ceil(total / parseInt(limit)),
+            currentPage: parseInt(page),
+            totalCourses: total
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
