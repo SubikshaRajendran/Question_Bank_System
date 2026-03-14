@@ -5,6 +5,7 @@ import CourseCard from '../../components/CourseCard';
 import { Search, Filter, User, Bell, Trophy } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Loader from '../../components/Loader';
+import Pagination from '../../components/Pagination';
 
 const StudentDashboard = () => {
     const { user } = useAuth();
@@ -18,6 +19,10 @@ const StudentDashboard = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [difficultyFilter, setDifficultyFilter] = useState('');
     const [departmentFilter, setDepartmentFilter] = useState('');
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const COURSES_PER_PAGE = 6;
 
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -79,7 +84,14 @@ const StudentDashboard = () => {
         }
 
         setFilteredCourses(result);
+        setCurrentPage(1); // Reset to first page on filter change
     }, [searchTerm, difficultyFilter, departmentFilter, courses]);
+
+    // Get current courses for the page
+    const indexOfLastCourse = currentPage * COURSES_PER_PAGE;
+    const indexOfFirstCourse = indexOfLastCourse - COURSES_PER_PAGE;
+    const currentCourses = filteredCourses.slice(indexOfFirstCourse, indexOfLastCourse);
+    const totalPages = Math.ceil(filteredCourses.length / COURSES_PER_PAGE);
 
     const handleNotificationClick = async (notif) => {
         try {
@@ -304,11 +316,22 @@ const StudentDashboard = () => {
                     <p>Try adjusting your search or filters.</p>
                 </div>
             ) : (
-                <div className="student-grid">
-                    {filteredCourses.map(course => (
-                        <CourseCard key={course._id} course={course} />
-                    ))}
-                </div>
+                <>
+                    <div className="student-grid">
+                        {currentCourses.map(course => (
+                            <CourseCard key={course._id} course={course} />
+                        ))}
+                    </div>
+
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={(page) => {
+                            setCurrentPage(page);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                    />
+                </>
             )}
         </div>
     );

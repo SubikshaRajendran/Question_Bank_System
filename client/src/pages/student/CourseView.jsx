@@ -7,6 +7,7 @@ import Loader from '../../components/Loader';
 import confetti from 'canvas-confetti';
 import jsPDF from 'jspdf';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import Pagination from '../../components/Pagination';
 
 const CourseView = () => {
     const { id } = useParams();
@@ -23,6 +24,10 @@ const CourseView = () => {
 
     const [filterType, setFilterType] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const QUESTIONS_PER_PAGE = 10;
 
     // Stats
     const totalQuestions = questions.length;
@@ -158,8 +163,14 @@ const CourseView = () => {
         }
 
         setFilteredQuestions(result);
-
+        setCurrentPage(1); // Reset to first page on filter change
     }, [course, questions, readQIds, flaggedQIds, filterType, searchTerm]);
+
+    // Get current questions for the page
+    const indexOfLastQuestion = currentPage * QUESTIONS_PER_PAGE;
+    const indexOfFirstQuestion = indexOfLastQuestion - QUESTIONS_PER_PAGE;
+    const currentQuestions = filteredQuestions.slice(indexOfFirstQuestion, indexOfLastQuestion);
+    const totalPages = Math.ceil(filteredQuestions.length / QUESTIONS_PER_PAGE);
 
     // Scroll to hash on load
     useEffect(() => {
@@ -421,86 +432,100 @@ const CourseView = () => {
                             <p>No questions found matching your criteria.</p>
                         </div>
                     ) : (
-                        filteredQuestions.map((q, index) => {
-                            const isRead = readQIds.includes(q._id);
-                            const isFlagged = flaggedQIds.includes(q._id);
-                            // Find the original index of the question for consistent numbering
-                            const originalIndex = questions.findIndex(origQ => origQ._id === q._id);
+                        <>
+                            {currentQuestions.map((q, index) => {
+                                const isRead = readQIds.includes(q._id);
+                                const isFlagged = flaggedQIds.includes(q._id);
+                                // Find the original index of the question for consistent numbering
+                                const originalIndex = questions.findIndex(origQ => origQ._id === q._id);
 
-                            return (
-                                <div id={q._id} key={q._id} className="question-card" style={{ padding: '1.5rem', marginBottom: '1.5rem', boxShadow: 'var(--card-shadow)', border: 'var(--glass-border)', transition: 'transform 0.2s', backgroundColor: 'var(--card-bg)' }}>
-                                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                                        <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--primary-color)', minWidth: '2rem' }}>
-                                            {originalIndex + 1}.
-                                        </span>
-                                        <div style={{ flex: 1 }}>
-                                            <p dangerouslySetInnerHTML={{
-                                                __html: searchTerm ? q.text.replace(new RegExp(`(${searchTerm})`, 'gi'), '<span class="highlight">$1</span>') : q.text
-                                            }} style={{ margin: '0 0 1.5rem 0', fontSize: '1.1rem', color: 'var(--text-color)', lineHeight: '1.6' }}></p>
-                                        </div>
-                                    </div>
-
-                                    <div className="question-actions" style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap' }}>
-                                        {isRead ? (
-                                            <span style={{ color: 'var(--success)', border: '1px solid var(--success)', padding: '0.5rem 1rem', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', fontWeight: '500', background: 'rgba(16, 185, 129, 0.05)' }}>
-                                                <Check size={18} /> Completed
+                                return (
+                                    <div id={q._id} key={q._id} className="question-card" style={{ padding: '1.5rem', marginBottom: '1.5rem', boxShadow: 'var(--card-shadow)', border: 'var(--glass-border)', transition: 'transform 0.2s', backgroundColor: 'var(--card-bg)' }}>
+                                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                                            <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--primary-color)', minWidth: '2rem' }}>
+                                                {originalIndex + 1}.
                                             </span>
-                                        ) : (
-                                            <button className="btn btn-secondary btn-sm" onClick={() => markRead(q._id)}>
-                                                Mark as Complete
-                                            </button>
-                                        )}
-
-                                        <button
-                                            className="btn btn-secondary btn-sm"
-                                            style={isFlagged ? { borderColor: 'var(--danger)', color: 'var(--danger)', background: 'rgba(239, 68, 68, 0.05)' } : {}}
-                                            onClick={() => markFlagged(q._id)}
-                                        >
-                                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <Flag size={16} fill={isFlagged ? 'currentColor' : 'none'} />
-                                                {isFlagged ? 'Flagged' : 'Flag'}
-                                            </span>
-                                        </button>
-
-                                        <button
-                                            className="btn btn-secondary btn-sm"
-                                            onClick={() => setCommentingQId(q._id)}
-                                        >
-                                            💬 Comment
-                                        </button>
-                                    </div>
-
-                                    {commentingQId === q._id && (
-                                        <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: '0.75rem' }}>
-                                            <textarea
-                                                rows="3"
-                                                placeholder="Type your question or comment here..."
-                                                value={commentText}
-                                                onChange={(e) => setCommentText(e.target.value)}
-                                                style={{ width: '100%', padding: '0.75rem', marginBottom: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}
-                                            ></textarea>
-                                            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-                                                <button
-                                                    className="btn btn-sm btn-secondary"
-                                                    onClick={() => {
-                                                        setCommentingQId(null);
-                                                        setCommentText('');
-                                                    }}
-                                                >
-                                                    Cancel
-                                                </button>
-                                                <button
-                                                    className="btn btn-sm btn-primary"
-                                                    onClick={() => handleAddComment(q._id)}
-                                                >
-                                                    Submit Comment
-                                                </button>
+                                            <div style={{ flex: 1 }}>
+                                                <p dangerouslySetInnerHTML={{
+                                                    __html: searchTerm ? q.text.replace(new RegExp(`(${searchTerm})`, 'gi'), '<span class="highlight">$1</span>') : q.text
+                                                }} style={{ margin: '0 0 1.5rem 0', fontSize: '1.1rem', color: 'var(--text-color)', lineHeight: '1.6' }}></p>
                                             </div>
                                         </div>
-                                    )}
-                                </div>
-                            );
-                        })
+
+                                        <div className="question-actions" style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                                            {isRead ? (
+                                                <span style={{ color: 'var(--success)', border: '1px solid var(--success)', padding: '0.5rem 1rem', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', fontWeight: '500', background: 'rgba(16, 185, 129, 0.05)' }}>
+                                                    <Check size={18} /> Completed
+                                                </span>
+                                            ) : (
+                                                <button className="btn btn-secondary btn-sm" onClick={() => markRead(q._id)}>
+                                                    Mark as Complete
+                                                </button>
+                                            )}
+
+                                            <button
+                                                className="btn btn-secondary btn-sm"
+                                                style={isFlagged ? { borderColor: 'var(--danger)', color: 'var(--danger)', background: 'rgba(239, 68, 68, 0.05)' } : {}}
+                                                onClick={() => markFlagged(q._id)}
+                                            >
+                                                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <Flag size={16} fill={isFlagged ? 'currentColor' : 'none'} />
+                                                    {isFlagged ? 'Flagged' : 'Flag'}
+                                                </span>
+                                            </button>
+
+                                            <button
+                                                className="btn btn-secondary btn-sm"
+                                                onClick={() => setCommentingQId(q._id)}
+                                            >
+                                                💬 Comment
+                                            </button>
+                                        </div>
+
+                                        {commentingQId === q._id && (
+                                            <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: '0.75rem' }}>
+                                                <textarea
+                                                    rows="3"
+                                                    placeholder="Type your question or comment here..."
+                                                    value={commentText}
+                                                    onChange={(e) => setCommentText(e.target.value)}
+                                                    style={{ width: '100%', padding: '0.75rem', marginBottom: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}
+                                                ></textarea>
+                                                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                                                    <button
+                                                        className="btn btn-sm btn-secondary"
+                                                        onClick={() => {
+                                                            setCommentingQId(null);
+                                                            setCommentText('');
+                                                        }}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        className="btn btn-sm btn-primary"
+                                                        onClick={() => handleAddComment(q._id)}
+                                                    >
+                                                        Submit Comment
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={(page) => {
+                                    setCurrentPage(page);
+                                    // Scroll to the bottom of the header card or top of content
+                                    const contentTop = document.querySelector('.course-layout-modern');
+                                    if (contentTop) {
+                                        contentTop.scrollIntoView({ behavior: 'smooth' });
+                                    }
+                                }}
+                            />
+                        </>
                     )}
                 </main>
 
