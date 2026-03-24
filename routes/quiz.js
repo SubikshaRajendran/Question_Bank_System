@@ -301,6 +301,7 @@ router.get('/student/leaderboard', async (req, res) => {
                     _id: 0,
                     studentId: "$_id",
                     studentName: "$studentInfo.username",
+                    profilePicture: "$studentInfo.profilePicture",
                     averagePercentage: { $round: ["$averagePercentage", 1] },
                     totalAttempts: 1
                 }
